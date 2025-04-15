@@ -8,41 +8,28 @@ URL:            https://zdoom.org/
 
 #Git-Clone:     https://github.com/zdoom/gzdoom
 Source:         https://github.com/zdoom/gzdoom/archive/g%version.tar.gz
-Patch2:         gzdoom-discord.patch
-Patch3:         0001-Revert-Switch-to-miniz-from-zlib.patch
-Patch4:         gzdoom-lzma-simd.patch
-Patch5:         gzdoom-lzma.patch
-Patch8:         more-32bit.patch
-BuildRequires:  cmake >= 2.8.7
-BuildRequires:  discord-rpc-devel
-BuildRequires:  gcc-c++
-BuildRequires:  libjpeg-devel
-BuildRequires:  pkg-config
-BuildRequires:  unzip
-BuildRequires:  zmusic-devel >= 1.1.14
-BuildRequires:  pkgconfig(bzip2)
-BuildRequires:  pkgconfig(flac)
-BuildRequires:  pkgconfig(gl)
-BuildRequires:  pkgconfig(gtk+-3.0)
-BuildRequires:  pkgconfig(libwebp)
-BuildRequires:  pkgconfig(openal)
-BuildRequires:  pkgconfig(sdl2) >= 2.0.6
-BuildRequires:  pkgconfig(vpx)
-BuildRequires:  pkgconfig(zlib)
-%if 0%{?suse_version} >= 1599
-BuildRequires:  pkgconfig(clzma) >= 23.01
-%else
-Provides:       bundled(clzma) = 23.01
-%endif
-Provides:       qzdoom = 1.3.0
-Provides:       zdoom = 2.8.1
-Provides:       bundled(gdtoa)
-Provides:       bundled(glslang) = 11.10.0
-Provides:       bundled(re2c) = 0.16.0
-Provides:       bundled(vulkan) = 1.2.189.1
-Provides:       bundled(vulkan-volk)
-Provides:       bundled(xbrz) = 1.8
-Suggests:       freedoom
+BuildRequires:  g++
+BuildRequires:  make
+BuildRequires:  cmake
+BuildRequires:  libsdl2-dev
+BuildRequires:  git
+BuildRequires:  zlib1g-dev
+BuildRequires:  libbz2-dev
+BuildRequires:  libjpeg-dev
+BuildRequires:  libfluidsynth-dev
+BuildRequires:  libgme-dev
+BuildRequires:  libopenal-dev
+BuildRequires:  libmpg123-dev
+BuildRequires:  libsndfile1-dev
+BuildRequires:  libgtk-3-dev
+BuildRequires:  timidity 
+BuildRequires:  nasm
+BuildRequires:  libgl1-mesa-dev
+BuildRequires:  tar
+BuildRequires:  libsdl1.2-dev
+BuildRequires:  libglew-dev
+BuildRequires:  libvpx-dev
+
 
 %description
 GZDoom is a port (a modification) of the original Doom source code, featuring:
@@ -95,6 +82,9 @@ echo "INFO: %name: The global IWAD directory is %_datadir/doom."
 %_bindir/%name
 %_defaultdocdir/%name
 %_datadir/doom/
+
+%changelog
+
 
 %changelog
 
