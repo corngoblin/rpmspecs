@@ -11,7 +11,7 @@ URL:            https://ghostty.org/
 Source0:        https://github.com/ghostty-org/ghostty/archive/%{commit}/ghostty-%{commit}.tar.gz
 #Patch0:         pkgconfig-libadwaita-1.diff
 #Patch1:         use-pkg-config.diff
-#Patch2:         no-strip.diff
+Patch2:         no-strip.diff
 BuildRequires:  zig
 BuildRequires:  gtk4-devel libadwaita-devel
 BuildRequires:  pandoc-cli
