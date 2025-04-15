@@ -1,0 +1,11 @@
+--- gzdoom-g4.1.2-orig/glslang/spirv/CMakeLists.txt     2019-05-14 12:08:00.000000000 -0700
++++ gzdoom-g4.1.2/glslang/spirv/CMakeLists.txt  2019-05-22 12:12:19.940469685 -0700
+@@ -47,6 +47,8 @@
+     SPVRemapper.h
+     doc.h)
+ 
++set(LIB_TYPE STATIC)
++
+ if(ENABLE_AMD_EXTENSIONS)
+     list(APPEND
+          HEADERS
