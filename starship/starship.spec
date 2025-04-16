@@ -5,7 +5,7 @@
 %global crate starship
 
 Name:           rust-starship
-Version:        1.20.1
+Version:        1.22.1
 Release:        %autorelease
 Summary:        Minimal, blazing-fast, and infinitely customizable prompt for any shell! ☄🌌️
 
