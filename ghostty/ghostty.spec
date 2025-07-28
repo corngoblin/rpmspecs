@@ -1,61 +1,40 @@
 Name:           ghostty
 Version:        1.1.3
 Release:        1%{?dist}
-Summary:        Fast, GPU-accelerated, and cross-platform terminal emulator
+Summary:        A fast, feature-rich modern terminal emulator
 
-License:        MIT
+License:        MPL-2.0
 URL:            https://github.com/ghostty-org/ghostty
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
+Source0:        https://github.com/ghostty-org/ghostty/archive/refs/tags/v%{version}.tar.gz
+
+BuildRequires:  git
+BuildRequires:  zig >= 0.12.0
+BuildRequires:  which
 
 ExclusiveArch:  x86_64 aarch64
 
-BuildRequires:  fontconfig-devel
-BuildRequires:  freetype-devel
-BuildRequires:  glib2-devel
-BuildRequires:  gtk4-devel
-BuildRequires:  harfbuzz-devel
-BuildRequires:  libadwaita-devel
-BuildRequires:  libpng-devel
-BuildRequires:  oniguruma-devel
-BuildRequires:  pandoc-cli
-BuildRequires:  pixman-devel
-BuildRequires:  pkg-config
-BuildRequires:  wayland-protocols-devel
-BuildRequires:  zig
-BuildRequires:  zlib-ng-devel
-
-Requires:       fontconfig
-Requires:       freetype
-Requires:       glib2
-Requires:       gtk4
-Requires:       harfbuzz
-Requires:       libadwaita
-Requires:       libpng
-Requires:       oniguruma
-Requires:       pixman
-Requires:       zlib-ng
-
 %description
-Ghostty is a modern terminal emulator that is GPU-accelerated, cross-platform, and leverages native system UI components.
+Ghostty is a modern terminal emulator with GPU-accelerated rendering, fast startup,
+and native configuration using Lua. This package builds Ghostty using Zig.
 
 %prep
-%autosetup -n ghostty-%{version}
+%autosetup -n %{name}-%{version}
 
-# Fix .zon enum formatting (Zig requires bare enum identifiers)
+# Patch build.zig.zon for Zig 0.12 compatibility:
+# - Fix deprecated `.name` format
+# - Add required `.fingerprint` field
 sed -i 's/\.name = "ghostty"/.name = .ghostty/' build.zig.zon
+sed -i '1i.fingerprint = 0x64407a2a0b4147e5,' build.zig.zon
 
 %build
-zig build \
-    --summary all \
-    --prefix "%{_prefix}" \
-    -Dversion-string=%{version}-%{release} \
-    -Doptimize=ReleaseFast \
-    -Dcpu=baseline \
-    -Dpie=true \
-    -Demit-docs
+export ZIG_LOCAL_CACHE_DIR=$PWD/.zig-cache
+export ZIG_GLOBAL_CACHE_DIR=$PWD/.zig-cache
+export ZIG_TELEMETRY_DISABLED=1
+
+zig build -Drelease-safe
 
 %install
-install -Dm0755 zig-out/bin/ghostty %{buildroot}%{_bindir}/ghostty
+install -Dm755 zig-out/bin/ghostty -t %{buildroot}%{_bindir}
 
 %files
 %license LICENSE
@@ -63,5 +42,5 @@ install -Dm0755 zig-out/bin/ghostty %{buildroot}%{_bindir}/ghostty
 %{_bindir}/ghostty
 
 %changelog
-* Mon Jul 29 2025 Monkeygold <monkeygold@example.com> - 1.1.3-1
-- Initial COPR package
+* Mon Jul 29 2025 Rob <you@example.com> - 1.1.3-1
+- Initial build for Fedora with Zig 0.12 patch and ghostty-org repo URL
