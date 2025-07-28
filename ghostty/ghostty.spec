@@ -1,86 +1,55 @@
 Name:           ghostty
 Version:        1.1.3
 Release:        1%{?dist}
-Summary:        Fast, feature-rich, and cross-platform terminal emulator that uses platform-native UI and GPU acceleration
+Summary:        Fast, feature-rich modern terminal
 
-License:        MIT
-URL:            https://github.com/ghostty-org/ghostty
-Source0:        https://github.com/ghostty-org/ghostty/archive/refs/tags/v%{version}.tar.gz
+License:        MPL-2.0
+URL:            https://github.com/wasamasa/ghostty
+Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
-ExclusiveArch:  x86_64 aarch64
-
+BuildRequires:  git-core
+BuildRequires:  zig
+BuildRequires:  libxkbcommon-devel
 BuildRequires:  fontconfig-devel
 BuildRequires:  freetype-devel
-BuildRequires:  glib2-devel
-BuildRequires:  gtk4-devel
-BuildRequires:  harfbuzz-devel
-BuildRequires:  libadwaita-devel
-BuildRequires:  libpng-devel
-BuildRequires:  oniguruma-devel
-BuildRequires:  pandoc-cli
-BuildRequires:  pixman-devel
-BuildRequires:  pkg-config
+BuildRequires:  mesa-libEGL-devel
+BuildRequires:  mesa-libGL-devel
+BuildRequires:  wayland-devel
 BuildRequires:  wayland-protocols-devel
-BuildRequires:  zig
-BuildRequires:  zlib-ng-devel
-
-Requires:       fontconfig
-Requires:       freetype
-Requires:       glib2
-Requires:       gtk4
-Requires:       harfbuzz
-Requires:       libadwaita
-Requires:       libpng
-Requires:       oniguruma
-Requires:       pixman
-Requires:       zlib-ng
+BuildRequires:  libinput-devel
+BuildRequires:  systemd-rpm-macros
 
 %description
-%{summary}.
+Ghostty is a modern, fast and GPU-accelerated terminal emulator.
 
 %prep
-%setup -q -n ghostty-%{version}
+%autosetup -n %{name}-v%{version}
 
-# Add missing top-level 'fingerprint' field to build.zig.zon (required by Zig)
+# Patch build.zig.zon so that zig can fetch required packages.
+# This assumes you're using zig's package manager for dependencies.
 sed -i '1s/^\.{/{ fingerprint = 0x64407a2a5ee614e9; /' build.zig.zon
-
-# Fix Zig enum literal with correct trailing semicolon
-sed -i 's/\.name = "ghostty"/.name = .ghostty;/' build.zig.zon
+sed -i 's/\.name = "ghostty"/.name = .ghostty/' build.zig.zon
 
 %build
 zig build \
-    --summary all \
-    --prefix "%{buildroot}%{_prefix}" \
-    -Dversion-string=%{version}-%{release} \
-    -Doptimize=ReleaseFast \
-    -Dcpu=baseline \
-    -Dpie=true \
-    -Demit-docs
+  --summary all \
+  --prefix %{_prefix} \
+  -Dversion-string=%{version}-%{release} \
+  -Doptimize=ReleaseSafe \
+  -Dcpu=baseline \
+  -Dpie=true \
+  -Demit-docs
 
-%if 0%{?fedora} == 42
-rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
-%endif
+%install
+rm -rf %{buildroot}
+install -d %{buildroot}%{_bindir}
+install -m 0755 zig-out/bin/ghostty %{buildroot}%{_bindir}/ghostty
 
 %files
 %license LICENSE
+%doc README.md
 %{_bindir}/ghostty
-%{_prefix}/share/applications/com.mitchellh.ghostty.desktop
-%{_prefix}/share/bash-completion/completions/ghostty.bash
-%{_prefix}/share/bat/syntaxes/ghostty.sublime-syntax
-%{_prefix}/share/fish/vendor_completions.d/ghostty.fish
-%{_prefix}/share/ghostty
-%{_prefix}/share/icons/hicolor/*/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/kio/servicemenus/com.mitchellh.ghostty.desktop
-%{_prefix}/share/man/man1/ghostty.1
-%{_prefix}/share/man/man5/ghostty.5
-%{_prefix}/share/nautilus-python/extensions/ghostty.py
-%{_prefix}/share/nvim/site/**/*ghostty.vim
-%{_prefix}/share/vim/vimfiles/**/*ghostty.vim
-%{_prefix}/share/zsh/site-functions/_ghostty
-%{_prefix}/share/terminfo/x/xterm-ghostty
-%if 0%{?fedora} != 42
-%{_prefix}/share/terminfo/g/ghostty
-%endif
 
 %changelog
-%autochangelog
+* Mon Jul 29 2025 Your Name <you@example.com> - 1.1.3-1
+- Initial package for ghostty
