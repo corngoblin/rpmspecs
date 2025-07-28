@@ -1,5 +1,5 @@
 %global forgeurl https://github.com/ghostty-org/ghostty
-%global commit 18831374caf2617235717cf30705c89b657934bb
+%global commit 520ba27bb7187c2fb9ce40b18db3c0db0d54f701
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %forgemeta
 
