@@ -1,49 +1,61 @@
 Name:           ghostty
 Version:        1.1.3
 Release:        1%{?dist}
-Summary:        Fast, feature-rich modern terminal
+Summary:        Fast, GPU-accelerated, and cross-platform terminal emulator
 
-License:        MPL-2.0
-URL:            https://github.com/wasamasa/ghostty
+License:        MIT
+URL:            https://github.com/ghostty-org/ghostty
 Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz
 
-BuildRequires:  git-core
-BuildRequires:  zig
-BuildRequires:  libxkbcommon-devel
+ExclusiveArch:  x86_64 aarch64
+
 BuildRequires:  fontconfig-devel
 BuildRequires:  freetype-devel
-BuildRequires:  mesa-libEGL-devel
-BuildRequires:  mesa-libGL-devel
-BuildRequires:  wayland-devel
+BuildRequires:  glib2-devel
+BuildRequires:  gtk4-devel
+BuildRequires:  harfbuzz-devel
+BuildRequires:  libadwaita-devel
+BuildRequires:  libpng-devel
+BuildRequires:  oniguruma-devel
+BuildRequires:  pandoc-cli
+BuildRequires:  pixman-devel
+BuildRequires:  pkg-config
 BuildRequires:  wayland-protocols-devel
-BuildRequires:  libinput-devel
-BuildRequires:  systemd-rpm-macros
+BuildRequires:  zig
+BuildRequires:  zlib-ng-devel
+
+Requires:       fontconfig
+Requires:       freetype
+Requires:       glib2
+Requires:       gtk4
+Requires:       harfbuzz
+Requires:       libadwaita
+Requires:       libpng
+Requires:       oniguruma
+Requires:       pixman
+Requires:       zlib-ng
 
 %description
-Ghostty is a modern, fast and GPU-accelerated terminal emulator.
+Ghostty is a modern terminal emulator that is GPU-accelerated, cross-platform, and leverages native system UI components.
 
 %prep
-%autosetup -n %{name}-v%{version}
+%autosetup -n ghostty-%{version}
 
-# Patch build.zig.zon so that zig can fetch required packages.
-# This assumes you're using zig's package manager for dependencies.
-sed -i '1s/^\.{/{ fingerprint = 0x64407a2a5ee614e9; /' build.zig.zon
+# Fix .zon enum formatting (Zig requires bare enum identifiers)
 sed -i 's/\.name = "ghostty"/.name = .ghostty/' build.zig.zon
 
 %build
 zig build \
-  --summary all \
-  --prefix %{_prefix} \
-  -Dversion-string=%{version}-%{release} \
-  -Doptimize=ReleaseSafe \
-  -Dcpu=baseline \
-  -Dpie=true \
-  -Demit-docs
+    --summary all \
+    --prefix "%{_prefix}" \
+    -Dversion-string=%{version}-%{release} \
+    -Doptimize=ReleaseFast \
+    -Dcpu=baseline \
+    -Dpie=true \
+    -Demit-docs
 
 %install
-rm -rf %{buildroot}
-install -d %{buildroot}%{_bindir}
-install -m 0755 zig-out/bin/ghostty %{buildroot}%{_bindir}/ghostty
+install -Dm0755 zig-out/bin/ghostty %{buildroot}%{_bindir}/ghostty
 
 %files
 %license LICENSE
@@ -51,5 +63,5 @@ install -m 0755 zig-out/bin/ghostty %{buildroot}%{_bindir}/ghostty
 %{_bindir}/ghostty
 
 %changelog
-* Mon Jul 29 2025 Your Name <you@example.com> - 1.1.3-1
-- Initial package for ghostty
+* Mon Jul 29 2025 Monkeygold <monkeygold@example.com> - 1.1.3-1
+- Initial COPR package
