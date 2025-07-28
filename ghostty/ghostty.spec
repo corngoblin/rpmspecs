@@ -44,8 +44,8 @@ Requires:       zlib-ng
 # Add missing top-level 'fingerprint' field to build.zig.zon (required by Zig)
 sed -i '1s/^\.{/{ fingerprint = 0x64407a2a5ee614e9; /' build.zig.zon
 
-# Fix Zig enum literal in .zon file (Zig does NOT accept quoted strings for enums)
-sed -i 's/\.name = "ghostty"/.name = .ghostty/' build.zig.zon
+# Fix Zig enum literal with correct trailing semicolon
+sed -i 's/\.name = "ghostty"/.name = .ghostty;/' build.zig.zon
 
 %build
 zig build \
