@@ -44,5 +44,5 @@ install -m 0644 man/ghostty.1 %{buildroot}%{_mandir}/man1/
 %{_mandir}/man1/ghostty.1*
 
 %changelog
-* Mon Jul 29 2025 Rob <you@example.com> - 1.1.3-1
+* 
 - Initial RPM package for Ghostty terminal emulator
