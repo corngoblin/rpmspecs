@@ -1,5 +1,5 @@
 Name:           duckstation
-Version:        0.1.0  # Set a default version for the initial build
+Version:        0.1.0
 Release:        1%{?dist}
 Summary:        PlayStation 1 emulator
 License:        CC BY-NC-ND 4.0
@@ -45,5 +45,5 @@ make install DESTDIR=%{buildroot}
 %license LICENSE
 
 %changelog
-* Thu Jul 31 2025 Your Name <youremail@example.com> - 0.1.0-1
+* Thu Jul 31 2025 Monkeygold - 0.1.0-1
 - Initial package
