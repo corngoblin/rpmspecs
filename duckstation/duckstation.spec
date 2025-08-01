@@ -19,6 +19,7 @@ Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_fil
 BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
+BuildRequires:  extra-cmake-modules
 
 # Core deps
 BuildRequires:  SDL3-devel
@@ -180,13 +181,14 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# 2) Configure DuckStation, pointing at our CMake modules
+# 2) Configure DuckStation, pointing at our CMake modules and ECM
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DCMAKE_MODULE_PATH=$PWD/CMakeModules
+  -DCMAKE_MODULE_PATH=$PWD/CMakeModules \
+  -DECM_DIR=/usr/lib64/cmake/ECM
 
 # 3) Build
 ninja -C build
@@ -212,7 +214,8 @@ install -Dm644 \
 
 %changelog
 * Fri Aug 1 2025 Monkegold <you@example.com> - 0.1.9226-1
-- Added libzip-devel & soundtouch-devel to BuildRequires  
-- Injected Findlibzip.cmake, FindSoundTouch.cmake, FindDiscordRPC.cmake  
-- Vendored & built Discord-RPC static in-tree  
-- Retained dash-free RPM Version; actual tag in %{upstream_tag}  
+- Added extra-cmake-modules BuildRequires
+- Injected Findlibzip.cmake, FindSoundTouch.cmake, FindDiscordRPC.cmake
+- Vendored & built Discord-RPC static in-tree
+- Passed -DECM_DIR to %cmake for ECM detection
+- Retained dash-free RPM Version; actual tag in %{upstream_tag}
