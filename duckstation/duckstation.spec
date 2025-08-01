@@ -26,6 +26,7 @@ BuildRequires:  git
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig
 BuildRequires:  libshaderc-devel
+BuildRequires:  libbacktrace-devel
 
 # Core UI
 BuildRequires:  SDL3-devel
@@ -243,6 +244,6 @@ install -Dm644 \
 
 %changelog
 * Fri Aug 2 2025 You <you@example.com> - 0.1.9226-7
-- Fix build failure by explicitly setting the paths to the SPIRV-Cross
-- library and headers, ensuring the custom CMake module can correctly
-- define the imported target.
+- Fixed build failure by adding libbacktrace-devel to BuildRequires.
+- This allows the CMake configuration to find the required backtrace
+- library, which was missing in the build environment.
