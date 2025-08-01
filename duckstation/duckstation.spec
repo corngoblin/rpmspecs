@@ -33,7 +33,7 @@ BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qt5compat-devel
 
-# Multimedia and graphics
+# Multimedia & graphics
 BuildRequires:  mesa-libGL-devel
 BuildRequires:  mesa-libEGL-devel
 BuildRequires:  vulkan-devel
@@ -43,34 +43,32 @@ BuildRequires:  libavutil-free-devel
 BuildRequires:  libswresample-free-devel
 BuildRequires:  libswscale-free-devel
 
-# Networking and compression
+# Networking & compression
 BuildRequires:  libcurl-devel
 BuildRequires:  openssl-devel
 BuildRequires:  zlib-devel
 BuildRequires:  brotli-devel
 BuildRequires:  minizip-compat-devel
 
-# Fonts and images
+# Fonts & image support
 BuildRequires:  fontconfig-devel
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  libpng-devel
 
-# Audio and input
+# Audio & input
 BuildRequires:  pulseaudio-libs-devel
 BuildRequires:  pipewire-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
 
-# Wayland/X11/windowing
+# Windowing (Wayland, X11, etc.)
 BuildRequires:  egl-wayland-devel
 BuildRequires:  gtk3-devel
 BuildRequires:  dbus-devel
 BuildRequires:  systemd-devel
 BuildRequires:  wayland-devel
 BuildRequires:  libdecor-devel
-
-# X11-specific deps
 BuildRequires:  libSM-devel
 BuildRequires:  libICE-devel
 BuildRequires:  libX11-devel
@@ -96,11 +94,12 @@ BuildRequires:  xcb-util-xrm-devel
 BuildRequires:  libxkbcommon-devel
 BuildRequires:  libxkbcommon-x11-devel
 
-# CPU feature detection
+# CPU features
 BuildRequires:  cpuinfo-devel
 
-# Satisfy DuckStationDependencies.cmake find_package(libzip)
+# satisfy find_package(libzip) & find_package(SoundTouch)
 BuildRequires:  libzip-devel
+BuildRequires:  soundtouch-devel
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -111,25 +110,22 @@ DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, pla
 # 1) Unpack DuckStation (creates duckstation-0.1-9226/)
 %setup -q -n duckstation-%{upstream_tag}
 
-# 2) Vendor in Discord-RPC, stripping its top folder
+# 2) Vendor in Discord-RPC (strip its top folder)
 mkdir -p discord-rpc
 tar -xzf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
-# 3) Inject custom CMake modules so find_package works
+# 3) Inject custom CMakeModules
 mkdir -p CMakeModules
 
-# 3a) vendored Discord-RPC
+# 3a) FindDiscordRPC.cmake
 cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
-# FindDiscordRPC.cmake — locate our vendored static Discord-RPC
 find_path(DiscordRPC_INCLUDE_DIR discord_rpc.h
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/include
-        ENV DISCORDRPC_INCLUDE_DIR
 )
 find_library(DiscordRPC_LIBRARY
   NAMES discord-rpc libdiscord-rpc
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/build
-        ENV DISCORDRPC_LIBRARY
 )
 if(DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
   set(DiscordRPC_FOUND TRUE)
@@ -139,15 +135,14 @@ endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
 
-# 3b) system libzip
+# 3b) Findlibzip.cmake
 cat > CMakeModules/Findlibzip.cmake << 'EOF'
-# Findlibzip.cmake — satisfy find_package(libzip)
 find_path(libzip_INCLUDE_DIR zip.h
-  PATHS /usr/include /usr/local/include
+  PATHS /usr/include
 )
 find_library(libzip_LIBRARY
   NAMES zip libzip
-  PATHS /usr/lib64 /usr/local/lib64 /usr/lib /usr/local/lib
+  PATHS /usr/lib64 /usr/lib
 )
 if(libzip_INCLUDE_DIR AND libzip_LIBRARY)
   set(libzip_FOUND TRUE)
@@ -157,8 +152,25 @@ endif()
 mark_as_advanced(libzip_INCLUDE_DIR libzip_LIBRARY)
 EOF
 
+# 3c) FindSoundTouch.cmake
+cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
+find_path(SoundTouch_INCLUDE_DIR SoundTouch.h
+  PATHS /usr/include
+)
+find_library(SoundTouch_LIBRARY
+  NAMES SoundTouch
+  PATHS /usr/lib64 /usr/lib
+)
+if(SoundTouch_INCLUDE_DIR AND SoundTouch_LIBRARY)
+  set(SoundTouch_FOUND TRUE)
+  set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDE_DIR})
+  set(SoundTouch_LIBRARIES  ${SoundTouch_LIBRARY})
+endif()
+mark_as_advanced(SoundTouch_INCLUDE_DIR SoundTouch_LIBRARY)
+EOF
+
 %build
-# Build static Discord-RPC in-tree
+# 1) Build vendored static Discord-RPC
 pushd discord-rpc
 mkdir build && cd build
 cmake .. \
@@ -168,7 +180,7 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Configure DuckStation, pointing at our modules
+# 2) Configure DuckStation, pointing at our CMake modules
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
@@ -176,16 +188,17 @@ popd
   -DDISCORDRPC_SUPPORT=ON \
   -DCMAKE_MODULE_PATH=$PWD/CMakeModules
 
-# Build
+# 3) Build
 ninja -C build
 
 %install
 # Stage into buildroot
 ninja -C build install DESTDIR=%{buildroot}
 
-# Install desktop file & icon (ignore if already present)
+# Desktop file & icon (ignore upstream re-install errors)
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
+
 install -Dm644 \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
@@ -198,8 +211,8 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug  1 2025 Monkegold <you@example.com> - 0.1.9226-1
-- Added libzip-devel to BuildRequires
-- Injected Findlibzip.cmake alongside FindDiscordRPC.cmake
-- Vendored Discord-RPC, built static in-tree
-- Retained dash-free RPM Version; actual tag in %{upstream_tag}
+* Fri Aug 1 2025 Monkegold <you@example.com> - 0.1.9226-1
+- Added libzip-devel & soundtouch-devel to BuildRequires  
+- Injected Findlibzip.cmake, FindSoundTouch.cmake, FindDiscordRPC.cmake  
+- Vendored & built Discord-RPC static in-tree  
+- Retained dash-free RPM Version; actual tag in %{upstream_tag}  
