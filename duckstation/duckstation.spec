@@ -146,10 +146,9 @@ mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
 
 # 2) Findspirv_cross_c_shared.cmake
-# NOTE: The upstream SPIRV-Cross project creates a libspirv-cross-c.so when
-# BUILD_SHARED_LIBS=ON and SPIRV_CROSS_C_API=ON are used. The duckstation
-# CMakeLists.txt expects "spirv-cross-c-shared". This module creates an
-# IMPORTED shared target with the expected name to link against.
+# FIX: The SPIRV-Cross build produces a static library, not a shared one.
+# This module is changed to find the static library and define a static
+# imported target.
 cat > CMakeModules/Findspirv_cross_c_shared.cmake << 'EOF'
 find_path(spirv_cross_c_shared_INCLUDE_DIR
   NAMES spirv_cross_c.h
@@ -163,7 +162,7 @@ if (spirv_cross_c_shared_INCLUDE_DIR AND spirv_cross_c_shared_LIBRARY)
   set(spirv_cross_c_shared_FOUND         TRUE)
   set(spirv_cross_c_shared_INCLUDE_DIRS  ${spirv_cross_c_shared_INCLUDE_DIR})
   set(spirv_cross_c_shared_LIBRARIES     ${spirv_cross_c_shared_LIBRARY})
-  add_library(spirv-cross-c-shared SHARED IMPORTED)
+  add_library(spirv-cross-c-shared STATIC IMPORTED)
   set_target_properties(spirv-cross-c-shared PROPERTIES
     IMPORTED_LOCATION "${spirv_cross_c_shared_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${spirv_cross_c_shared_INCLUDE_DIR}"
@@ -208,7 +207,7 @@ cmake .. \
     -DSPIRV_CROSS_C_API=ON \
     -DBUILD_TESTING=OFF \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-cmake --build . --target spirv-cross-c-shared || cmake --build .
+cmake --build .
 popd
 
 # Configure & build DuckStation
@@ -243,6 +242,6 @@ install -Dm644 \
 
 %changelog
 * Fri Aug 2 2025 You <you@example.com> - 0.1.9226-7
-- Fix build failure by correcting the SPIRV-Cross build process.
-- The `Findspirv_cross_c_shared.cmake` module was corrected to look for the correct library name.
-- Added a fallback in the SPIRV-Cross build command for robust shared library generation.
+- Fix build failure by aligning the custom CMake module with the
+- output of the SPIRV-Cross build, which produces a static library
+- instead of a shared one.
