@@ -11,8 +11,8 @@ URL:            https://github.com/stenzek/duckstation
 %global project_dir     duckstation-%{tag_name}
 %global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 
-Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/%{tag_name}.tar.gz#/duckstation-%{version}.tar.gz
-Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_ver}.tar.gz#/discord-rpc-%{discord_rpc_ver}.tar.gz
+Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/%{tag_name}.tar.gz
+Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_ver}.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
@@ -104,14 +104,15 @@ DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, p
 
 %prep
 %autosetup -n %{project_dir}
-# Extract DiscordRPC into subdirectory
+
+# Extract DiscordRPC source and rename
 tar -xf %{SOURCE1}
 mv discord-rpc-%{discord_rpc_ver} discord-rpc
 
 %build
 # Build DiscordRPC first
 pushd discord-rpc
-mkdir build && cd build
+mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --target discord-rpc
 popd
