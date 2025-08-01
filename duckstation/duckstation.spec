@@ -1,11 +1,3 @@
-Today
-You said
-
-logs.txt
-
-Plain Text
-i'm getting these errors trying to build a spec file for fedora copr. I've given you the error logs.. here is my .spec file try to fix it 
-
 Name:           duckstation
 Version:        0.1.9226
 Release:        1%{?dist}
