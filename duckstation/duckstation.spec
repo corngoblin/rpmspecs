@@ -9,12 +9,14 @@ URL:            https://github.com/stenzek/duckstation
 # pinned Discord-RPC commit for reproducible builds
 %global discord_rpc_ver    cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 %global discord_rpc_file   %{discord_rpc_ver}.tar.gz
-
 # real upstream tag (contains a dash)
 %global upstream_tag       0.1-9226
+# vendored libbacktrace version
+%global backtrace_ver      20240722
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
+Source2:        https://ftp.gnu.org/gnu/binutils/libbacktrace-%{backtrace_ver}.tar.gz
 
 # -----------------------------------------------------------------------------
 # BuildRequires
@@ -26,7 +28,9 @@ BuildRequires:  git
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig
 BuildRequires:  libshaderc-devel
-BuildRequires:  libbacktrace-devel
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  libtool
 
 # Core UI
 BuildRequires:  SDL3-devel
@@ -126,6 +130,9 @@ tar xf %{_sourcedir}/%{discord_rpc_file} \
 git clone --depth=1 \
     https://github.com/KhronosGroup/SPIRV-Cross.git spirv-cross
 
+# Vendor libbacktrace
+mkdir -p backtrace && tar xf %{_sourcedir}/libbacktrace-%{backtrace_ver}.tar.gz --strip-components=1 -C backtrace
+
 # Custom CMake find-modules
 mkdir -p CMakeModules
 
@@ -189,6 +196,26 @@ set_target_properties(Shaderc::shaderc_shared PROPERTIES
 mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
 EOF
 
+# 4) FindLibbacktrace.cmake
+# FIX: Since libbacktrace is not in the repo, we vendor it and define a custom
+# find module to point to the vendored location.
+cat > CMakeModules/FindLibbacktrace.cmake << 'EOF'
+find_path(LIBBACKTRACE_INCLUDE_DIR
+  NAMES backtrace.h
+  PATHS ${CMAKE_SOURCE_DIR}/backtrace/install/include
+)
+find_library(LIBBACKTRACE_LIBRARY
+  NAMES backtrace
+  PATHS ${CMAKE_SOURCE_DIR}/backtrace/install/lib
+)
+if(LIBBACKTRACE_INCLUDE_DIR AND LIBBACKTRACE_LIBRARY)
+  set(Libbacktrace_FOUND TRUE)
+  set(Libbacktrace_LIBRARIES ${LIBBACKTRACE_LIBRARY})
+  set(Libbacktrace_INCLUDE_DIRS ${LIBBACKTRACE_INCLUDE_DIR})
+endif()
+mark_as_advanced(LIBBACKTRACE_INCLUDE_DIR LIBBACKTRACE_LIBRARY)
+EOF
+
 %build
 # Build Discord-RPC
 pushd discord-rpc
@@ -208,6 +235,14 @@ cmake .. \
     -DBUILD_TESTING=OFF \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build .
+popd
+
+# Build vendored libbacktrace
+pushd backtrace
+# libbacktrace uses autotools, not cmake
+./configure --prefix=%{_builddir}/duckstation-%{upstream_tag}/backtrace/install
+make
+make install
 popd
 
 # Configure & build DuckStation
@@ -244,6 +279,6 @@ install -Dm644 \
 
 %changelog
 * Fri Aug 2 2025 You <you@example.com> - 0.1.9226-7
-- Fixed build failure by adding libbacktrace-devel to BuildRequires.
-- This is the correct package on Fedora for the libbacktrace library,
-- allowing the build to find the required development files.
+- Fixed build by vendoring the libbacktrace library.
+- This is a necessary step as libbacktrace is not available in the Fedora
+- repositories, which caused the build to fail at the dependency check stage.
