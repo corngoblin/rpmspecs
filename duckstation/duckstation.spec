@@ -6,11 +6,12 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# Remove incorrect URL suffix
+# Discord RPC branch and tarball filename
 %global discord_rpc_ver master
+%global discord_rpc_file %{discord_rpc_ver}.tar.gz
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz
-Source1:        https://github.com/stenzek/discord-rpc/archive/refs/heads/%{discord_rpc_ver}.tar.gz
+Source1:        https://github.com/stenzek/discord-rpc/archive/refs/heads/%{discord_rpc_file}
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
@@ -104,29 +105,24 @@ DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, p
 %prep
 %autosetup -n duckstation-0.1-9226
 
-# Extract discord-rpc source to 'discord-rpc' directory
 mkdir -p discord-rpc
-tar -xzf %{_sourcedir}/%{SOURCE1##*/} -C discord-rpc --strip-components=1
+tar -xzf %{_sourcedir}/%{discord_rpc_file} -C discord-rpc --strip-components=1
 
 %build
-# Build discord-rpc static library
-cd discord-rpc
+pushd discord-rpc
 mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --target discord-rpc
+popd
 
-# Go back to duckstation source root
-cd %{_builddir}/duckstation-0.1-9226
-
-# Build duckstation with DiscordRPC enabled, pointing to discord-rpc build
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DDiscordRPC_INCLUDE_DIR=$(pwd)/discord-rpc/include \
-  -DDiscordRPC_LIBRARY=$(pwd)/discord-rpc/build/libdiscord-rpc.a
+  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/duckstation-0.1-9226/discord-rpc/include \
+  -DDiscordRPC_LIBRARY=%{_builddir}/duckstation-0.1-9226/discord-rpc/build/libdiscord-rpc.a
 
 %ninja_build -C build
 
