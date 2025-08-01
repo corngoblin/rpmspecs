@@ -1,23 +1,23 @@
 Name:           duckstation
-Version:        0.1.9226
+Version:        0.1-9226
 Release:        1%{?dist}
-Summary:        Fast PlayStation 1 emulator
+Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# Pin to the discord-rpc commit hash from the build script for reproducibility
+# Pin to the discord-rpc commit for reproducible builds
 %global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 %global discord_rpc_file %{discord_rpc_ver}.tar.gz
 
-Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz
+Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{version}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 
-# Core dependencies
+# Core deps
 BuildRequires:  SDL3-devel
 BuildRequires:  SDL3_image-devel
 BuildRequires:  SDL3_ttf-devel
@@ -47,7 +47,7 @@ BuildRequires:  zlib-devel
 BuildRequires:  brotli-devel
 BuildRequires:  minizip-compat-devel
 
-# Fonts and image support
+# Fonts and images
 BuildRequires:  fontconfig-devel
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  libpng-devel
@@ -59,7 +59,7 @@ BuildRequires:  alsa-lib-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
 
-# Wayland/X11/windowing
+# Windowing
 BuildRequires:  egl-wayland-devel
 BuildRequires:  gtk3-devel
 BuildRequires:  dbus-devel
@@ -67,7 +67,7 @@ BuildRequires:  systemd-devel
 BuildRequires:  wayland-devel
 BuildRequires:  libdecor-devel
 
-# X11-specific deps
+# X11-specific
 BuildRequires:  libSM-devel
 BuildRequires:  libICE-devel
 BuildRequires:  libX11-devel
@@ -99,43 +99,54 @@ BuildRequires:  cpuinfo-devel
 ExclusiveArch:  x86_64 aarch64
 
 %description
-DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
+DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long-term maintainability.
 
 %prep
-%setup -q -n duckstation-0.1.9226
+# Unpack main archive into duckstation-%{version}
+%setup -q -n duckstation-%{version}
 
+# Unpack Discord-RPC into an embedded subdir (strip the top-level)
 mkdir -p discord-rpc
 pushd discord-rpc
 %setup -q -T -D -a 1
 popd
 
 %build
-cd duckstation-0.1.9226/discord-rpc
+# Build and install static Discord-RPC
+pushd discord-rpc
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-cmake --build . --target discord-rpc
-cd ../..
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+  -DCMAKE_INSTALL_PREFIX=%{_prefix}
+cmake --build . --target install
+popd
 
+# Build DuckStation with Qt & DiscordRPC support
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/duckstation-0.1.9226/discord-rpc/include \
-  -DDiscordRPC_LIBRARY=%{_builddir}/duckstation-0.1.9226/discord-rpc/build/libdiscord-rpc.a \
+  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/duckstation-%{version}/discord-rpc/include \
+  -DDiscordRPC_LIBRARY=%{_builddir}/duckstation-%{version}/discord-rpc/build/libdiscord-rpc.a \
   -DDiscordRPC_FOUND=TRUE
 
-%ninja_build -C build
+ninja -C build
 
 %install
-%ninja_install -C build
+# Install into %{buildroot}
+ninja -C build install DESTDIR=%{buildroot}
 
+# Ensure desktop file and icon land in the right spot
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
-  %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
+  %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop || :
 
-install -Dm644 %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
-  %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png || :
+install -Dm644 \
+  %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
+  %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %files
 %license LICENSE
@@ -145,8 +156,8 @@ install -Dm644 %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstatio
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Thu Jul 31 2025 Monkegold <o53cbexp0@mozmail.com> - 0.1.9226-1
-- Updated to tag v0.1-9226
-- Switched to SDL3
-- Enabled DiscordRPC support with embedded build
-- Ensured compatibility with Fedora 42 and Rawhide
+* Thu Jul 31 2025 Monkegold <o533333cbexp0@mozmail.com> - 0.1-9226-1
+- Fixed version/tag mismatch
+- Installed embedded Discord-RPC into %{_prefix}
+- Replaced undefined %ninja_build/%ninja_install macros
+- Updated %setup directives for sub-dir extraction
