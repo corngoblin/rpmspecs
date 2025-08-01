@@ -105,7 +105,9 @@ DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, p
 %autosetup -n duckstation-0.1-9226
 
 mkdir -p discord-rpc
-tar -xzf %{_sourcedir}/%{discord_rpc_file} -C discord-rpc --strip-components=1
+pushd discord-rpc
+%setup -q -T -D -a 1
+popd
 
 %build
 cd discord-rpc
