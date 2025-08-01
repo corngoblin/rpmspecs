@@ -102,11 +102,13 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
 
 %prep
-%setup -q -n duckstation-0.1-9226
+# Extract source WITHOUT changing directory
+%setup -q -n duckstation-0.1-9226 -T
 
-# Rename extracted source folder before entering it
+# Rename directory
 mv duckstation-0.1-9226 duckstation-0.1.9226
 
+# Change into renamed directory
 cd duckstation-0.1.9226
 
 mkdir -p discord-rpc
