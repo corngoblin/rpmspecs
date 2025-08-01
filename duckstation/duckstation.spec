@@ -23,7 +23,7 @@ BuildRequires:  libX11-devel
 DuckStation is a PlayStation 1 emulator that aims to be accurate and user-friendly.
 
 %prep
-%setup -q -c
+# Download the source tarball
 curl -L -o %{name}-%{version}.tar.gz %{_source_path}
 tar -xzf %{name}-%{version}.tar.gz
 cd %{name}-%{version}
@@ -45,5 +45,5 @@ make install DESTDIR=%{buildroot}
 %license LICENSE
 
 %changelog
-* Thu Jul 31 2025 Monkeygold - 0.1.0-1
+* Thu Jul 31 2025 Your Name <youremail@example.com> - 0.1.0-1
 - Initial package
