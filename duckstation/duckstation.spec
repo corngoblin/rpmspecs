@@ -10,9 +10,6 @@ URL:            https://github.com/stenzek/duckstation
 %global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 %global discord_rpc_file %{discord_rpc_ver}.tar.gz
 
-# Define builddir macro for extracted source directory
-%global builddir %{_builddir}/%{name}-%{version}
-
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
 
@@ -130,6 +127,9 @@ cd ../..
   -DDiscordRPC_FOUND=TRUE
 
 %ninja_build -C build
+
+%install
+%ninja_install -C build
 
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
