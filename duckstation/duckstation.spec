@@ -16,6 +16,7 @@ URL:            https://github.com/stenzek/duckstation
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
 
+# Core build tools
 BuildRequires:  cmake
 BuildRequires:  extra-cmake-modules
 BuildRequires:  gcc-c++
@@ -23,16 +24,16 @@ BuildRequires:  git
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig
 
-# system Shaderc – headers, .so symlink, shaderc.pc
+# Shaderc
 BuildRequires:  libshaderc-devel
 
-# Core deps
+# Qt & SDL3
 BuildRequires:  SDL3-devel SDL3_image-devel SDL3_ttf-devel
 BuildRequires:  qt6-qtbase-devel qt6-qttools-devel qt6-qtsvg-devel
 BuildRequires:  qt6-qtmultimedia-devel qt6-qtshadertools-devel
 BuildRequires:  qt6-qtwayland-devel qt6-qtdeclarative-devel qt6-qt5compat-devel
 
-# Multimedia & graphics
+# Graphics & multimedia
 BuildRequires:  mesa-libGL-devel mesa-libEGL-devel vulkan-devel
 BuildRequires:  libavcodec-free-devel libavformat-free-devel
 BuildRequires:  libavutil-free-devel libswresample-free-devel libswscale-free-devel
@@ -84,23 +85,69 @@ cmake .. \
   -DSPIRV_CROSS_C_API=ON \
   -DBUILD_TESTING=OFF \
   -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-# build everything
-cmake --build .
 popd
-
-# patch out the broken spirv-cross target queries in DuckStationDependencies
-# (lines that do get_target_property / get_filename_component on spirv-cross-c-shared)
-sed -i '/find_package(spirv_cross_c_shared REQUIRED)/,/^endif()/ { 
-  /get_target_property/ s/^/#/; 
-  /get_filename_component/ s/^/#/ 
-}' CMakeModules/DuckStationDependencies.cmake
 
 # Custom CMake find-modules
 mkdir -p CMakeModules
 
-# … your other Find*.cmake here (FindDiscordRPC, FindShaderc, etc.) …
+# FindDiscordRPC.cmake
+cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
+find_path(DiscordRPC_INCLUDE_DIR discord_rpc.h
+  PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/include
+)
+find_library(DiscordRPC_LIBRARY
+  NAMES discord-rpc libdiscord-rpc
+  PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/build
+)
+if (DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
+  set(DiscordRPC_FOUND       TRUE)
+  set(DiscordRPC_INCLUDE_DIRS ${DiscordRPC_INCLUDE_DIR})
+  set(DiscordRPC_LIBRARIES   ${DiscordRPC_LIBRARY})
+endif()
+mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
+EOF
+
+# Findspirv_cross_c_shared.cmake
+cat > CMakeModules/Findspirv_cross_c_shared.cmake << 'EOF'
+find_path(spirv_cross_c_shared_INCLUDE_DIR
+  NAMES spirv_cross_c.h
+  PATHS ${CMAKE_SOURCE_DIR}/spirv-cross
+)
+find_library(spirv_cross_c_shared_LIBRARY
+  NAMES spirv_cross_c_shared spirv-cross-c-shared
+  PATHS ${CMAKE_SOURCE_DIR}/spirv-cross/build-spirv
+)
+if (spirv_cross_c_shared_INCLUDE_DIR AND spirv_cross_c_shared_LIBRARY)
+  set(spirv_cross_c_shared_FOUND        TRUE)
+  set(spirv_cross_c_shared_INCLUDE_DIRS ${spirv_cross_c_shared_INCLUDE_DIR})
+  set(spirv_cross_c_shared_LIBRARIES    ${spirv_cross_c_shared_LIBRARY})
+endif()
+mark_as_advanced(spirv_cross_c_shared_INCLUDE_DIR spirv_cross_c_shared_LIBRARY)
+EOF
+
+# FindShaderc.cmake
+cat > CMakeModules/FindShaderc.cmake << 'EOF'
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(Shaderc REQUIRED shaderc)
+set(Shaderc_FOUND        TRUE)
+set(Shaderc_INCLUDE_DIRS ${Shaderc_INCLUDEDIR})
+set(Shaderc_LIBRARIES    ${Shaderc_LIBRARIES})
+
+get_filename_component(_shlib_dir ${Shaderc_LIBRARIES} PATH)
+set(_shlib "${_shlib_dir}/libshaderc_shared.so")
+add_library(Shaderc::shaderc_shared UNKNOWN IMPORTED GLOBAL)
+set_target_properties(Shaderc::shaderc_shared PROPERTIES
+  IMPORTED_LOCATION "${_shlib}"
+  INTERFACE_INCLUDE_DIRECTORIES "${Shaderc_INCLUDEDIR}"
+)
+
+mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
+EOF
 
 %build
+# full path to the top of the source tree in mock/Copr
+native_builddir=%{_builddir}/%{name}-%{upstream_tag}
+
 # Build Discord-RPC
 pushd discord-rpc
 mkdir build && cd build
@@ -111,13 +158,18 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Configure & build DuckStation
+# Build SPIRV-Cross C-API
+pushd spirv-cross/build-spirv
+cmake --build .
+popd
+
+# Configure & build DuckStation with absolute MODULE_PATH
 %cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DCMAKE_MODULE_PATH=CMakeModules \
+  -DCMAKE_MODULE_PATH=${native_builddir}/CMakeModules \
   -DECM_DIR=%{_libdir}/cmake/ECM
 
 ninja -C build
@@ -125,11 +177,21 @@ ninja -C build
 %install
 ninja -C build install DESTDIR=%{buildroot}
 
-#desktop file & icon install omitted for brevity
+# desktop file & icon
+desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
+  %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
+install -Dm644 \
+  %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
+  %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %files
-# … your file list …
+%license LICENSE
+%doc README.md
+%{_bindir}/duckstation-qt
+%{_datadir}/applications/org.duckstation.DuckStation.desktop
+%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
 * Fri Aug  1 2025 You <you@example.com> — 0.1.9226-8
-- Patched out spirv-cross-c-shared target queries to avoid missing-target errors  
+- Use absolute CMAKE_MODULE_PATH to locate custom FindDiscordRPC.cmake  
+- Bump Release to 8 to reflect new fix
