@@ -55,8 +55,9 @@ BuildRequires:  libX11-devel libXau-devel libxcb-devel libXcomposite-devel
 BuildRequires:  libXcursor-devel libXext-devel libXfixes-devel libXft-devel
 BuildRequires:  libXi-devel libXpresent-devel libXrandr-devel libXrender-devel
 BuildRequires:  xcb-util-cursor-devel xcb-util-devel xcb-util-errors-devel
-BuildRequires:  xcb-util-image-devel xcb-util-keysyms-devel xcb-util-renderutil-devel
-BuildRequires:  xcb-util-wm-devel xcb-util-xrm-devel libxkbcommon-devel libxkbcommon-x11-devel
+BuildRequires:  xcb-util-image-devel xcb-util-keysyms-devel
+BuildRequires:  xcb-util-renderutil-devel xcb-util-wm-devel xcb-util-xrm-devel
+BuildRequires:  libxkbcommon-devel libxkbcommon-x11-devel
 
 # CPU features & extras
 BuildRequires:  cpuinfo-devel libzip-devel soundtouch-devel
@@ -123,6 +124,16 @@ endif()
 mark_as_advanced(spirv_cross_c_shared_INCLUDE_DIR spirv_cross_c_shared_LIBRARY)
 EOF
 
+# FindShaderc.cmake
+cat > CMakeModules/FindShaderc.cmake << 'EOF'
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(Shaderc REQUIRED shaderc)
+set(Shaderc_FOUND        TRUE)
+set(Shaderc_INCLUDE_DIRS ${Shaderc_INCLUDEDIR})
+set(Shaderc_LIBRARIES    ${Shaderc_LIBRARIES})
+mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
+EOF
+
 %build
 # Build Discord-RPC
 pushd discord-rpc
@@ -145,7 +156,7 @@ popd
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DCMAKE_MODULE_PATH=%{_sourcedir}/CMakeModules \
+  -DCMAKE_MODULE_PATH=CMakeModules \
   -DECM_DIR=%{_libdir}/cmake/ECM
 ninja -C build
 
@@ -168,5 +179,5 @@ install -Dm644 \
 
 %changelog
 * Fri Aug  1 2025 You <you@example.com> — 0.1.9226-7
-- switch SPIRV-Cross vendor cmake flag to `-DSPIRV_CROSS_C_API=ON`
-- build entire SPIRV-Cross C-API subtree instead of non-existent target
+- Added FindShaderc.cmake and pointed CMAKE_MODULE_PATH at CMakeModules  
+- Switched SPIRV-Cross flag to `-DSPIRV_CROSS_C_API=ON` and removed bad target  
