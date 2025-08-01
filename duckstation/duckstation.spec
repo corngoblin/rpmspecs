@@ -6,15 +6,15 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# pinned Discord-RPC commit for reproducible builds
-%global discord_rpc_ver   cc59d26d1d628fbd6527aac0ac1d6301f4978b92
-%global discord_rpc_file  %{discord_rpc_ver}.tar.gz
-
-# real upstream tag (contains a dash)
+# upstream tag (contains a dash)
 %global upstream_tag      0.1-9226
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
+
+# pinned Discord-RPC commit for reproducibility
+%global discord_rpc_ver   cc59d26d1d628fbd6527aac0ac1d6301f4978b92
+%global discord_rpc_file  %{discord_rpc_ver}.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
@@ -33,7 +33,7 @@ BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qt5compat-devel
 
-# Multimedia and graphics
+# Multimedia + graphics
 BuildRequires:  mesa-libGL-devel
 BuildRequires:  mesa-libEGL-devel
 BuildRequires:  vulkan-devel
@@ -43,34 +43,32 @@ BuildRequires:  libavutil-free-devel
 BuildRequires:  libswresample-free-devel
 BuildRequires:  libswscale-free-devel
 
-# Networking and compression
+# Networking & compression
 BuildRequires:  libcurl-devel
 BuildRequires:  openssl-devel
 BuildRequires:  zlib-devel
 BuildRequires:  brotli-devel
 BuildRequires:  minizip-compat-devel
 
-# Fonts and images
+# Fonts & images
 BuildRequires:  fontconfig-devel
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  libpng-devel
 
-# Audio and input
+# Audio & input
 BuildRequires:  pulseaudio-libs-devel
 BuildRequires:  pipewire-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
 
-# Wayland/X11/windowing
+# Windowing (Wayland / X11 / etc)
 BuildRequires:  egl-wayland-devel
 BuildRequires:  gtk3-devel
 BuildRequires:  dbus-devel
 BuildRequires:  systemd-devel
 BuildRequires:  wayland-devel
 BuildRequires:  libdecor-devel
-
-# X11-specific deps
 BuildRequires:  libSM-devel
 BuildRequires:  libICE-devel
 BuildRequires:  libX11-devel
@@ -105,42 +103,42 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long-term maintainability.
 
 %prep
-# Unpack the main tarball (creates duckstation-0.1-9226/)
+# Unpack duckstation into duckstation-0.1-9226/
 %setup -q -n duckstation-%{upstream_tag}
 
-# Manually extract Discord-RPC into discord-rpc/, stripping its top-level dir
+# Vendor in the Discord-RPC source
 mkdir -p discord-rpc
 tar -xzf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
 %build
-# Build static Discord-RPC in-place
+# 1) Build & install Discord-RPC into a private prefix (_inst)
 pushd discord-rpc
 mkdir build && cd build
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_SHARED_LIBS=OFF \
-  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-cmake --build . --target discord-rpc
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+  -DCMAKE_INSTALL_PREFIX=${PWD}/_inst
+cmake --build . --target install
 popd
 
-# Configure and build DuckStation with embedded Discord-RPC
+# 2) Configure DuckStation, pointing CMake at the private DiscordRPC install
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DDiscordRPC_INCLUDE_DIR=$PWD/discord-rpc/include \
-  -DDiscordRPC_LIBRARY=$PWD/discord-rpc/build/libdiscord-rpc.a \
-  -DDiscordRPC_FOUND=TRUE
+  -DCMAKE_PREFIX_PATH=%{_builddir}/duckstation-%{upstream_tag}/discord-rpc/build/_inst
 
+# 3) Build
 ninja -C build
 
 %install
-# Stage everything into %{buildroot}
+# Stage install under %{buildroot}
 ninja -C build install DESTDIR=%{buildroot}
 
-# Install desktop file & icon (ignore errors if already present)
+# Ensure desktop file & icon land in place (no-fail)
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
 
@@ -156,7 +154,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Thu Jul 31 2025 Monkegold <o533333cbexp0@mozmail.com> - 0.1.9226-1
-- Replaced second %setup with a manual tar extract to preserve upstream directory name
-- Fixed %prep cd errors for discord-rpc
-- Left RPM Version dash-free; upstream_tag holds the real 0.1-9226
+* Thu Jul 31 2025 Monkegold <you@host> - 0.1.9226-1
+- Vendored Discord-RPC, installed into private `_inst` prefix
+- Added `CMAKE_PREFIX_PATH` so `find_package(DiscordRPC)` now locates it
+- Kept RPM Version dash-free; `upstream_tag` holds the real 0.1-9226
