@@ -6,12 +6,13 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# Pin to the discord-rpc commit hash from the build script for reproducibility
+# GitHub uses hyphens in archives, we map to a version-compatible tarball name
+%global tag_name        v0.1-9226
+%global project_dir     duckstation-%{tag_name}
 %global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
-%global discord_rpc_file %{discord_rpc_ver}.tar.gz
 
-Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz
-Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
+Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/%{tag_name}.tar.gz#/duckstation-%{version}.tar.gz
+Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_ver}.tar.gz#/discord-rpc-%{discord_rpc_ver}.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
@@ -67,7 +68,7 @@ BuildRequires:  systemd-devel
 BuildRequires:  wayland-devel
 BuildRequires:  libdecor-devel
 
-# X11-specific deps
+# X11-specific
 BuildRequires:  libSM-devel
 BuildRequires:  libICE-devel
 BuildRequires:  libX11-devel
@@ -102,28 +103,27 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
 
 %prep
-%autosetup -n duckstation-0.1-9226
-
-mkdir -p discord-rpc
-pushd discord-rpc
-%setup -q -T -D -a 1
-popd
+%autosetup -n %{project_dir}
+# Extract DiscordRPC into subdirectory
+tar -xf %{SOURCE1}
+mv discord-rpc-%{discord_rpc_ver} discord-rpc
 
 %build
-cd discord-rpc
-mkdir build
-cd build
+# Build DiscordRPC first
+pushd discord-rpc
+mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --target discord-rpc
-cd ../..
+popd
 
+# Build DuckStation
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/duckstation-0.1-9226/discord-rpc/include \
-  -DDiscordRPC_LIBRARY=%{_builddir}/duckstation-0.1-9226/discord-rpc/build/libdiscord-rpc.a \
+  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/%{project_dir}/discord-rpc/include \
+  -DDiscordRPC_LIBRARY=%{_builddir}/%{project_dir}/discord-rpc/build/libdiscord-rpc.a \
   -DDiscordRPC_FOUND=TRUE
 
 %ninja_build -C build
@@ -132,7 +132,7 @@ cd ../..
 %ninja_install -C build
 
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
-  %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
+  %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop || :
 
 install -Dm644 %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png || :
