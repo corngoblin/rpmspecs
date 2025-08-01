@@ -128,6 +128,6 @@ install -Dm644 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStatio
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Thu Aug 01 2025 Rob <you@example.com> - 0.1.9226-1
+* Thu Jul 31 2025 Monkegold <o53cbexp0@mozmail.com> - 0.1.9226-1
 - Added full Fedora build dependencies to match GitHub recommendations
 - Fixed build macros for Fedora 41/42/Rawhide COPR build
