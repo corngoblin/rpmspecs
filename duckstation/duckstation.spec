@@ -10,17 +10,21 @@ URL:            https://github.com/stenzek/duckstation
 %global discord_rpc_ver   cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 %global discord_rpc_file  %{discord_rpc_ver}.tar.gz
 
+# pinned Shaderc release
+%global shaderc_ver       2023.6.0
+%global shaderc_file      v%{shaderc_ver}.tar.gz
+
 # real upstream tag (contains a dash)
 %global upstream_tag      0.1-9226
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
+Source2:        https://github.com/google/shaderc/archive/refs/tags/%{shaderc_file}
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 BuildRequires:  extra-cmake-modules
-BuildRequires:  libshaderc-devel
 
 # Core deps
 BuildRequires:  SDL3-devel
@@ -116,6 +120,11 @@ mkdir -p discord-rpc
 tar -xzf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
+# Vendor in Shaderc
+mkdir -p shaderc
+tar -xzf %{_sourcedir}/%{shaderc_file} \
+    --strip-components=1 -C shaderc
+
 # Inject custom CMakeModules
 mkdir -p CMakeModules
 
@@ -128,10 +137,10 @@ find_library(DiscordRPC_LIBRARY
   NAMES discord-rpc libdiscord-rpc
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/build
 )
-if(DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
+if (DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
   set(DiscordRPC_FOUND TRUE)
-  set(DiscordRPC_INCLUDE_DIR ${DiscordRPC_INCLUDE_DIR})
-  set(DiscordRPC_LIBRARY     ${DiscordRPC_LIBRARY})
+  set(DiscordRPC_INCLUDE_DIRS ${DiscordRPC_INCLUDE_DIR})
+  set(DiscordRPC_LIBRARIES ${DiscordRPC_LIBRARY})
 endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
@@ -139,13 +148,13 @@ EOF
 # Findlibzip.cmake
 cat > CMakeModules/Findlibzip.cmake << 'EOF'
 find_path(libzip_INCLUDE_DIR zip.h
-  PATHS /usr/include
+  PATHS %{_includedir}
 )
 find_library(libzip_LIBRARY
   NAMES zip libzip
-  PATHS /usr/lib64 /usr/lib
+  PATHS %{_libdir}
 )
-if(libzip_INCLUDE_DIR AND libzip_LIBRARY)
+if (libzip_INCLUDE_DIR AND libzip_LIBRARY)
   set(libzip_FOUND TRUE)
   set(libzip_INCLUDE_DIRS ${libzip_INCLUDE_DIR})
   set(libzip_LIBRARIES  ${libzip_LIBRARY})
@@ -156,13 +165,13 @@ EOF
 # FindSoundTouch.cmake
 cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
 find_path(SoundTouch_INCLUDE_DIR SoundTouch.h
-  PATHS /usr/include
+  PATHS %{_includedir}
 )
 find_library(SoundTouch_LIBRARY
   NAMES SoundTouch
-  PATHS /usr/lib64 /usr/lib
+  PATHS %{_libdir}
 )
-if(SoundTouch_INCLUDE_DIR AND SoundTouch_LIBRARY)
+if (SoundTouch_INCLUDE_DIR AND SoundTouch_LIBRARY)
   set(SoundTouch_FOUND TRUE)
   set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDE_DIR})
   set(SoundTouch_LIBRARIES  ${SoundTouch_LIBRARY})
@@ -181,6 +190,16 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
+# Build vendored Shaderc
+pushd shaderc
+mkdir build && cd build
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+cmake --build .
+popd
+
 # Configure DuckStation
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -188,8 +207,9 @@ popd
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
   -DCMAKE_MODULE_PATH=$PWD/CMakeModules \
-  -DECM_DIR=/usr/lib64/cmake/ECM \
-  -DShaderc_DIR=/usr/lib64/cmake/shaderc
+  -DECM_DIR=%{_libdir}/cmake/ECM \
+  -DShaderc_INCLUDE_DIR=$PWD/shaderc/include \
+  -DShaderc_LIBRARY=$PWD/shaderc/build/libshaderc_combined.a
 
 # Build
 ninja -C build
@@ -213,6 +233,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug 1 2025 Monkegold <you@example.com> — 0.1.9226-4
-- Switched BuildRequires from shaderc-devel to libshaderc-devel  
-- Ensured -DShaderc_DIR still points to /usr/lib64/cmake/shaderc  
+* Fri Aug  1 2025 Monkegold <you@example.com> — 0.1.9226-4
+- Vendored Shaderc from GitHub and built it alongside Discord-RPC  
+- Removed system libshaderc-devel requirement  
+- Pointed CMake at vendored shaderc headers & library  
