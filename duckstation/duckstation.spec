@@ -6,11 +6,11 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# Add a macro for discord rpc version tag you want to use (example)
-%global discord_rpc_ver v3.4.0
+# Remove incorrect URL suffix
+%global discord_rpc_ver master
 
-Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz#/duckstation-%{version}.tar.gz
-Source1:        https://github.com/stenzek/discord-rpc/archive/refs/tags/%{discord_rpc_ver}.tar.gz#/discord-rpc-%{discord_rpc_ver}.tar.gz
+Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz
+Source1:        https://github.com/stenzek/discord-rpc/archive/refs/heads/%{discord_rpc_ver}.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
@@ -102,24 +102,24 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
 
 %prep
-# Prepare duckstation source
 %autosetup -n duckstation-0.1-9226
 
-# Prepare discord-rpc source in a separate folder
-%setup -q -T -b 1
+# Extract discord-rpc source to 'discord-rpc' directory
 mkdir -p discord-rpc
-tar xzf %{SOURCE1} -C discord-rpc --strip-components=1
+tar -xzf %{_sourcedir}/%{SOURCE1##*/} -C discord-rpc --strip-components=1
 
 %build
-# Build discord-rpc static library first
-pushd discord-rpc
-mkdir build
+# Build discord-rpc static library
+cd discord-rpc
+mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --target discord-rpc
-popd
 
-# Now build duckstation, telling cmake where to find discord-rpc
+# Go back to duckstation source root
+cd %{_builddir}/duckstation-0.1-9226
+
+# Build duckstation with DiscordRPC enabled, pointing to discord-rpc build
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
@@ -127,6 +127,7 @@ popd
   -DDISCORDRPC_SUPPORT=ON \
   -DDiscordRPC_INCLUDE_DIR=$(pwd)/discord-rpc/include \
   -DDiscordRPC_LIBRARY=$(pwd)/discord-rpc/build/libdiscord-rpc.a
+
 %ninja_build -C build
 
 %install
