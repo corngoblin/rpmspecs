@@ -6,9 +6,9 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# GitHub uses hyphens in archives, we map to a version-compatible tarball name
+# GitHub uses hyphens in archives, we map to version-compatible tarball directory name
 %global tag_name        v0.1-9226
-%global project_dir     duckstation-%{tag_name}
+%global project_dir     duckstation-%{tag_name//-/_}
 %global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/%{tag_name}.tar.gz
