@@ -20,7 +20,7 @@ BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 
-# DuckStation dependencies
+# Core deps
 BuildRequires:  SDL3-devel
 BuildRequires:  SDL3_image-devel
 BuildRequires:  SDL3_ttf-devel
@@ -70,7 +70,7 @@ BuildRequires:  systemd-devel
 BuildRequires:  wayland-devel
 BuildRequires:  libdecor-devel
 
-# X11-specific
+# X11-specific deps
 BuildRequires:  libSM-devel
 BuildRequires:  libICE-devel
 BuildRequires:  libX11-devel
@@ -96,11 +96,11 @@ BuildRequires:  xcb-util-xrm-devel
 BuildRequires:  libxkbcommon-devel
 BuildRequires:  libxkbcommon-x11-devel
 
-# CPU features
+# CPU feature detection
 BuildRequires:  cpuinfo-devel
 
-# << NEW >> SoundTouch is required by DuckStationDependencies.cmake
-BuildRequires:  soundtouch-devel
+# Satisfy DuckStationDependencies.cmake find_package(libzip)
+BuildRequires:  libzip-devel
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -116,8 +116,10 @@ mkdir -p discord-rpc
 tar -xzf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
-# 3) Inject custom FindDiscordRPC.cmake so find_package(DiscordRPC) works
+# 3) Inject custom CMake modules so find_package works
 mkdir -p CMakeModules
+
+# 3a) vendored Discord-RPC
 cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
 # FindDiscordRPC.cmake — locate our vendored static Discord-RPC
 find_path(DiscordRPC_INCLUDE_DIR discord_rpc.h
@@ -137,8 +139,26 @@ endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
 
+# 3b) system libzip
+cat > CMakeModules/Findlibzip.cmake << 'EOF'
+# Findlibzip.cmake — satisfy find_package(libzip)
+find_path(libzip_INCLUDE_DIR zip.h
+  PATHS /usr/include /usr/local/include
+)
+find_library(libzip_LIBRARY
+  NAMES zip libzip
+  PATHS /usr/lib64 /usr/local/lib64 /usr/lib /usr/local/lib
+)
+if(libzip_INCLUDE_DIR AND libzip_LIBRARY)
+  set(libzip_FOUND TRUE)
+  set(libzip_INCLUDE_DIRS ${libzip_INCLUDE_DIR})
+  set(libzip_LIBRARIES  ${libzip_LIBRARY})
+endif()
+mark_as_advanced(libzip_INCLUDE_DIR libzip_LIBRARY)
+EOF
+
 %build
-# Build static Discord-RPC in-place
+# Build static Discord-RPC in-tree
 pushd discord-rpc
 mkdir build && cd build
 cmake .. \
@@ -148,7 +168,7 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Configure DuckStation to pick up vendored RPC and system SoundTouch
+# Configure DuckStation, pointing at our modules
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
@@ -156,17 +176,16 @@ popd
   -DDISCORDRPC_SUPPORT=ON \
   -DCMAKE_MODULE_PATH=$PWD/CMakeModules
 
-# Compile DuckStation
+# Build
 ninja -C build
 
 %install
-# Stage into %{buildroot}
+# Stage into buildroot
 ninja -C build install DESTDIR=%{buildroot}
 
-# Install desktop file & icon (no error if already present)
+# Install desktop file & icon (ignore if already present)
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
-
 install -Dm644 \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
@@ -180,6 +199,7 @@ install -Dm644 \
 
 %changelog
 * Fri Aug  1 2025 Monkegold <you@example.com> - 0.1.9226-1
-- Added soundtouch-devel to satisfy find_package(SoundTouch)
-- Vendored Discord-RPC with custom FindDiscordRPC.cmake
-- Retained dash-free Version; actual tag in %{upstream_tag}
+- Added libzip-devel to BuildRequires
+- Injected Findlibzip.cmake alongside FindDiscordRPC.cmake
+- Vendored Discord-RPC, built static in-tree
+- Retained dash-free RPM Version; actual tag in %{upstream_tag}
