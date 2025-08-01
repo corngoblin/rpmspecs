@@ -1,5 +1,5 @@
 Name:           duckstation
-Version:        0.1.9.9226
+Version:        lastest
 Release:        1%{?dist}
 Summary:        PlayStation 1 emulator
 
