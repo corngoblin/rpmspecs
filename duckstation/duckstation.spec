@@ -1,6 +1,6 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
@@ -49,7 +49,7 @@ BuildRequires:  fontconfig-devel libjpeg-turbo-devel libpng-devel
 BuildRequires:  pulseaudio-libs-devel pipewire-devel
 BuildRequires:  alsa-lib-devel libevdev-devel libinput-devel
 
-# Windowing (Wayland, X11, etc.)
+# Windowing (Wayland, X11)
 BuildRequires:  egl-wayland-devel gtk3-devel dbus-devel systemd-devel
 BuildRequires:  wayland-devel libdecor-devel libSM-devel libICE-devel
 BuildRequires:  libX11-devel libXau-devel libxcb-devel libXcomposite-devel
@@ -121,6 +121,13 @@ if (spirv_cross_c_shared_INCLUDE_DIR AND spirv_cross_c_shared_LIBRARY)
   set(spirv_cross_c_shared_FOUND        TRUE)
   set(spirv_cross_c_shared_INCLUDE_DIRS ${spirv_cross_c_shared_INCLUDE_DIR})
   set(spirv_cross_c_shared_LIBRARIES    ${spirv_cross_c_shared_LIBRARY})
+
+  # Create imported CMake target to satisfy DuckStationDependencies
+  add_library(spirv-cross-c-shared UNKNOWN IMPORTED GLOBAL)
+  set_target_properties(spirv-cross-c-shared PROPERTIES
+    IMPORTED_LOCATION "${spirv_cross_c_shared_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${spirv_cross_c_shared_INCLUDE_DIR}"
+  )
 endif()
 mark_as_advanced(spirv_cross_c_shared_INCLUDE_DIR spirv_cross_c_shared_LIBRARY)
 EOF
@@ -145,7 +152,7 @@ mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
 EOF
 
 %build
-# full path to the top of the source tree in mock/Copr
+# absolute path to the top-level source in the chroot
 native_builddir=%{_builddir}/%{name}-%{upstream_tag}
 
 # Build Discord-RPC
@@ -158,20 +165,20 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Build SPIRV-Cross C-API
+# Build SPIRV-Cross C-API (shared)
 pushd spirv-cross/build-spirv
 cmake --build .
 popd
 
-# Configure & build DuckStation with absolute MODULE_PATH
+# Configure & build DuckStation
 %cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
   -DCMAKE_MODULE_PATH=${native_builddir}/CMakeModules \
-  -DECM_DIR=%{_libdir}/cmake/ECM
-
+  -DECM_DIR=%{_libdir}/cmake/ECM \
+  -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG
 ninja -C build
 
 %install
@@ -192,6 +199,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug  1 2025 You <you@example.com> — 0.1.9226-8
-- Use absolute CMAKE_MODULE_PATH to locate custom FindDiscordRPC.cmake  
-- Bump Release to 8 to reflect new fix
+* Sat Aug  2 2025 You <you@example.com> — 0.1.9226-9
+- Fix Findspirv_cross_c_shared by adding imported target `spirv-cross-c-shared`
+- Use absolute CMAKE_MODULE_PATH for all custom find scripts
+- Enable debug logging for module-path verification
