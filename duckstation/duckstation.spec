@@ -145,22 +145,22 @@ endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
 
-# 2) Findspirv_cross_c_shared.cmake (FIXED)
+# 2) Findspirv_cross_c_shared.cmake
 cat > CMakeModules/Findspirv_cross_c_shared.cmake << 'EOF'
 find_path(spirv_cross_c_shared_INCLUDE_DIR
   NAMES spirv_cross_c.h
   PATHS ${CMAKE_SOURCE_DIR}/spirv-cross/include
 )
+# The library will be named libspirv-cross-c-shared.so
+# Find it explicitly in the build directory.
 find_library(spirv_cross_c_shared_LIBRARY
   NAMES spirv-cross-c-shared
-  PATHS ${CMAKE_BINARY_DIR}/spirv-cross/build-spirv
+  PATHS ${CMAKE_SOURCE_DIR}/spirv-cross/build-spirv
 )
 if (spirv_cross_c_shared_INCLUDE_DIR AND spirv_cross_c_shared_LIBRARY)
   set(spirv_cross_c_shared_FOUND         TRUE)
   set(spirv_cross_c_shared_INCLUDE_DIRS  ${spirv_cross_c_shared_INCLUDE_DIR})
   set(spirv_cross_c_shared_LIBRARIES     ${spirv_cross_c_shared_LIBRARY})
-
-  # Create an imported target for CMake to find
   add_library(spirv-cross-c-shared SHARED IMPORTED)
   set_target_properties(spirv-cross-c-shared PROPERTIES
     IMPORTED_LOCATION "${spirv_cross_c_shared_LIBRARY}"
@@ -170,7 +170,7 @@ endif()
 mark_as_advanced(spirv_cross_c_shared_INCLUDE_DIR spirv_cross_c_shared_LIBRARY)
 EOF
 
-# 3) FindShaderc.cmake (FIXED)
+# 3) FindShaderc.cmake
 cat > CMakeModules/FindShaderc.cmake << 'EOF'
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Shaderc REQUIRED shaderc)
@@ -206,7 +206,9 @@ cmake .. \
     -DSPIRV_CROSS_C_API=ON \
     -DBUILD_TESTING=OFF \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-cmake --build . --target spirv-cross-c-shared
+# This is the fix. We build the default target, which should produce the shared libraries.
+# The CMake find module will then locate the correct file.
+cmake --build .
 popd
 
 # Configure & build DuckStation
@@ -241,7 +243,7 @@ install -Dm644 \
 
 %changelog
 * Fri Aug 2 2025 You <you@example.com> - 0.1.9226-7
-- Added imported CMake target for spirv-cross-c-shared in Findspirv_cross_c_shared.cmake
-- Modified FindShaderc.cmake to use SHARED IMPORTED target for consistency
-- Moved SPIRV-Cross build to %build section to ensure correct build order
-- Corrected location of SPIRV-Cross headers in Findspirv_cross_c_shared.cmake
+- Revised the SPIRV-Cross build command to not specify a non-existent target.
+- Added a correct path for the SPIRV-Cross library in the custom CMake module.
+- Modified FindShaderc.cmake to use SHARED IMPORTED target for consistency.
+- Corrected the location of SPIRV-Cross headers in Findspirv_cross_c_shared.cmake
