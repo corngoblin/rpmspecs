@@ -100,10 +100,12 @@ DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, p
 %autosetup -n duckstation-0.1-9226
 
 %build
+%build
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
-  -DDUCKSTATION_QT_UI=ON
+  -DDUCKSTATION_QT_UI=ON \
+  -DDISCORDRPC_SUPPORT=OFF
 %ninja_build -C build
 
 %install
