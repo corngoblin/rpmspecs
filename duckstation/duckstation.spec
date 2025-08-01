@@ -28,7 +28,6 @@ BuildRequires:  qt6-qttools-devel
 BuildRequires:  qt6-qtsvg-devel
 BuildRequires:  qt6-qtmultimedia-devel
 BuildRequires:  qt6-qtshadertools-devel
-BuildRequires:  qt6-qtx11extras-devel
 BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qt5compat-devel
