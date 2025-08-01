@@ -1,6 +1,6 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        9%{?dist}
+Release:        10%{?dist}
 Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
@@ -16,7 +16,6 @@ URL:            https://github.com/stenzek/duckstation
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
 
-# Core build tools
 BuildRequires:  cmake
 BuildRequires:  extra-cmake-modules
 BuildRequires:  gcc-c++
@@ -24,32 +23,25 @@ BuildRequires:  git
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig
 
-# Shaderc
 BuildRequires:  libshaderc-devel
 
-# Qt & SDL3
 BuildRequires:  SDL3-devel SDL3_image-devel SDL3_ttf-devel
 BuildRequires:  qt6-qtbase-devel qt6-qttools-devel qt6-qtsvg-devel
 BuildRequires:  qt6-qtmultimedia-devel qt6-qtshadertools-devel
 BuildRequires:  qt6-qtwayland-devel qt6-qtdeclarative-devel qt6-qt5compat-devel
 
-# Graphics & multimedia
 BuildRequires:  mesa-libGL-devel mesa-libEGL-devel vulkan-devel
 BuildRequires:  libavcodec-free-devel libavformat-free-devel
 BuildRequires:  libavutil-free-devel libswresample-free-devel libswscale-free-devel
 
-# Networking & compression
 BuildRequires:  libcurl-devel openssl-devel zlib-devel
 BuildRequires:  brotli-devel minizip-compat-devel
 
-# Fonts & images
 BuildRequires:  fontconfig-devel libjpeg-turbo-devel libpng-devel
 
-# Audio & input
 BuildRequires:  pulseaudio-libs-devel pipewire-devel
 BuildRequires:  alsa-lib-devel libevdev-devel libinput-devel
 
-# Windowing (Wayland, X11)
 BuildRequires:  egl-wayland-devel gtk3-devel dbus-devel systemd-devel
 BuildRequires:  wayland-devel libdecor-devel libSM-devel libICE-devel
 BuildRequires:  libX11-devel libXau-devel libxcb-devel libXcomposite-devel
@@ -60,7 +52,6 @@ BuildRequires:  xcb-util-image-devel xcb-util-keysyms-devel
 BuildRequires:  xcb-util-renderutil-devel xcb-util-wm-devel xcb-util-xrm-devel
 BuildRequires:  libxkbcommon-devel libxkbcommon-x11-devel
 
-# CPU features & extras
 BuildRequires:  cpuinfo-devel libzip-devel soundtouch-devel
 
 ExclusiveArch:  x86_64 aarch64
@@ -79,18 +70,18 @@ tar xf %{_sourcedir}/%{discord_rpc_file} \
 # Vendor SPIRV-Cross C-API (shared)
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Cross.git spirv-cross
 pushd spirv-cross
-mkdir build-spirv && cd build-spirv
-cmake .. \
-  -DBUILD_SHARED_LIBS=ON \
-  -DSPIRV_CROSS_C_API=ON \
-  -DBUILD_TESTING=OFF \
-  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+  mkdir build-spirv && cd build-spirv
+  cmake .. \
+    -DBUILD_SHARED_LIBS=ON \
+    -DSPIRV_CROSS_C_API=ON \
+    -DBUILD_TESTING=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 popd
 
 # Custom CMake find-modules
 mkdir -p CMakeModules
 
-# FindDiscordRPC.cmake
+# 1) DiscordRPC module
 cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
 find_path(DiscordRPC_INCLUDE_DIR discord_rpc.h
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/include
@@ -103,12 +94,19 @@ if (DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
   set(DiscordRPC_FOUND       TRUE)
   set(DiscordRPC_INCLUDE_DIRS ${DiscordRPC_INCLUDE_DIR})
   set(DiscordRPC_LIBRARIES   ${DiscordRPC_LIBRARY})
+
+  # Imported target so consumers can link via target
+  add_library(DiscordRPC::lib STATIC IMPORTED GLOBAL)
+  set_target_properties(DiscordRPC::lib PROPERTIES
+    IMPORTED_LOCATION "${DiscordRPC_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${DiscordRPC_INCLUDE_DIR}"
+  )
 endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
 
-# Findspirv_cross_c_shared.cmake
-cat > CMakeModules/Findspirv_cross_c_shared.cmake << 'EOF'
+# 2) SPIRV-Cross shared C API module (match hyphens in upstream find_package call!)
+cat > CMakeModules/Findspirv-cross-c-shared.cmake << 'EOF'
 find_path(spirv_cross_c_shared_INCLUDE_DIR
   NAMES spirv_cross_c.h
   PATHS ${CMAKE_SOURCE_DIR}/spirv-cross
@@ -122,17 +120,17 @@ if (spirv_cross_c_shared_INCLUDE_DIR AND spirv_cross_c_shared_LIBRARY)
   set(spirv_cross_c_shared_INCLUDE_DIRS ${spirv_cross_c_shared_INCLUDE_DIR})
   set(spirv_cross_c_shared_LIBRARIES    ${spirv_cross_c_shared_LIBRARY})
 
-  # Create imported CMake target to satisfy DuckStationDependencies
+  # Imported target to satisfy DuckStationDependencies.cmake
   add_library(spirv-cross-c-shared UNKNOWN IMPORTED GLOBAL)
   set_target_properties(spirv-cross-c-shared PROPERTIES
-    IMPORTED_LOCATION "${spirv_cross_c_shared_LIBRARY}"
+    IMPORTED_LOCATION        "${spirv_cross_c_shared_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${spirv_cross_c_shared_INCLUDE_DIR}"
   )
 endif()
 mark_as_advanced(spirv_cross_c_shared_INCLUDE_DIR spirv_cross_c_shared_LIBRARY)
 EOF
 
-# FindShaderc.cmake
+# 3) Shaderc module
 cat > CMakeModules/FindShaderc.cmake << 'EOF'
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Shaderc REQUIRED shaderc)
@@ -152,22 +150,19 @@ mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
 EOF
 
 %build
-# absolute path to the top-level source in the chroot
-native_builddir=%{_builddir}/%{name}-%{upstream_tag}
-
 # Build Discord-RPC
 pushd discord-rpc
-mkdir build && cd build
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-cmake --build . --target discord-rpc
+  mkdir build && cd build
+  cmake .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+  cmake --build . --target discord-rpc
 popd
 
 # Build SPIRV-Cross C-API (shared)
 pushd spirv-cross/build-spirv
-cmake --build .
+  cmake --build .
 popd
 
 # Configure & build DuckStation
@@ -176,9 +171,10 @@ popd
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DCMAKE_MODULE_PATH=${native_builddir}/CMakeModules \
-  -DECM_DIR=%{_libdir}/cmake/ECM \
-  -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG
+  -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG \
+  -DCMAKE_MODULE_PATH=\${CMAKE_SOURCE_DIR}/CMakeModules \
+  -DECM_DIR=%{_libdir}/cmake/ECM
+
 ninja -C build
 
 %install
@@ -199,7 +195,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Sat Aug  2 2025 You <you@example.com> — 0.1.9226-9
-- Fix Findspirv_cross_c_shared by adding imported target `spirv-cross-c-shared`
-- Use absolute CMAKE_MODULE_PATH for all custom find scripts
-- Enable debug logging for module-path verification
+* Sat Aug  2 2025 You <you@example.com> — 0.1.9226-10
+- Renamed Findspirv-cross-c-shared.cmake to match upstream find_package
+- Switched CMAKE_MODULE_PATH to use ${CMAKE_SOURCE_DIR}/CMakeModules
+- Added imported targets for DiscordRPC and SPIRV-Cross
