@@ -1,6 +1,6 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
@@ -11,12 +11,9 @@ URL:            https://github.com/stenzek/duckstation
 %global discord_rpc_file   %{discord_rpc_ver}.tar.gz
 # real upstream tag (contains a dash)
 %global upstream_tag       0.1-9226
-# vendored libbacktrace version
-%global backtrace_ver      20240722
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
-Source2:        https://ftp.gnu.org/gnu/binutils/libbacktrace-%{backtrace_ver}.tar.gz
 
 # -----------------------------------------------------------------------------
 # BuildRequires
@@ -131,7 +128,8 @@ git clone --depth=1 \
     https://github.com/KhronosGroup/SPIRV-Cross.git spirv-cross
 
 # Vendor libbacktrace
-mkdir -p backtrace && tar xf %{_sourcedir}/libbacktrace-%{backtrace_ver}.tar.gz --strip-components=1 -C backtrace
+git clone --depth=1 \
+    https://github.com/ianlancetaylor/libbacktrace.git backtrace
 
 # Custom CMake find-modules
 mkdir -p CMakeModules
@@ -278,7 +276,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug 2 2025 You <you@example.com> - 0.1.9226-7
-- Fixed build by vendoring the libbacktrace library.
-- This is a necessary step as libbacktrace is not available in the Fedora
-- repositories, which caused the build to fail at the dependency check stage.
+* Sat Aug 2 2025 You <you@example.com> - 0.1.9226-8
+- Fixed build failure by correctly vendoring libbacktrace from its Git repository.
+- The previous attempt failed because the source tarball URL was invalid.
+- This new approach is more robust and should allow the build to proceed.
