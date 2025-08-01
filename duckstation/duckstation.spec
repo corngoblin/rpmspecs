@@ -146,9 +146,8 @@ mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
 
 # 2) Findspirv_cross_c_shared.cmake
-# FIX: The SPIRV-Cross build produces a static library, not a shared one.
-# This module is changed to find the static library and define a static
-# imported target.
+# FIX: The SPIRV-Cross build produces a static library. We define an
+# imported target to link against it.
 cat > CMakeModules/Findspirv_cross_c_shared.cmake << 'EOF'
 find_path(spirv_cross_c_shared_INCLUDE_DIR
   NAMES spirv_cross_c.h
@@ -217,7 +216,9 @@ popd
     -DDUCKSTATION_QT_UI=ON \
     -DDISCORDRPC_SUPPORT=ON \
     -DCMAKE_MODULE_PATH=CMakeModules \
-    -DECM_DIR=%{_libdir}/cmake/ECM
+    -DECM_DIR=%{_libdir}/cmake/ECM \
+    -Dspirv_cross_c_shared_INCLUDE_DIR=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/include \
+    -Dspirv_cross_c_shared_LIBRARY=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/build-spirv/libspirv-cross-c.a
 
 ninja -C build
 
@@ -242,6 +243,6 @@ install -Dm644 \
 
 %changelog
 * Fri Aug 2 2025 You <you@example.com> - 0.1.9226-7
-- Fix build failure by aligning the custom CMake module with the
-- output of the SPIRV-Cross build, which produces a static library
-- instead of a shared one.
+- Fix build failure by explicitly setting the paths to the SPIRV-Cross
+- library and headers, ensuring the custom CMake module can correctly
+- define the imported target.
