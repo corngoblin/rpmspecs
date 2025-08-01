@@ -6,8 +6,9 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# The upstream archive extracts to duckstation-v0.1-9226, but detect dynamically
+# The upstream archive extracts to duckstation-v0.1-9226, so set explicitly
 %global tag_name        v0.1-9226
+%global project_dir     duckstation-%{tag_name}
 %global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/%{tag_name}.tar.gz
@@ -102,40 +103,28 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
 
 %prep
-# Extract main source archive quietly, changes to extracted dir automatically
-%setup -q
+%setup -q -n %{project_dir}
 
-# Detect extracted directory name dynamically
-project_dir=$(tar -tf %{SOURCE0} | head -1 | cut -f1 -d"/")
-
-# Extract DiscordRPC source
+# Extract DiscordRPC source and rename
 tar -xf %{SOURCE1}
 mv discord-rpc-%{discord_rpc_ver} discord-rpc
 
-# Save project_dir for later use in %build
-echo "export PROJECT_DIR=$project_dir" > %{_builddir}/project_dir.env
-
 %build
-# Load project_dir from %prep
-. %{_builddir}/project_dir.env
-
-# Build DiscordRPC first
-pushd "$PROJECT_DIR"/discord-rpc
+pushd discord-rpc
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --target discord-rpc
 popd
 
-# Build DuckStation
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/$PROJECT_DIR/discord-rpc/include \
-  -DDiscordRPC_LIBRARY=%{_builddir}/$PROJECT_DIR/discord-rpc/build/libdiscord-rpc.a \
+  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/%{project_dir}/discord-rpc/include \
+  -DDiscordRPC_LIBRARY=%{_builddir}/%{project_dir}/discord-rpc/build/libdiscord-rpc.a \
   -DDiscordRPC_FOUND=TRUE \
-  "$PROJECT_DIR"
+  %{project_dir}
 
 %ninja_build -C build
 
