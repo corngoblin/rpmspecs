@@ -125,14 +125,11 @@ cd ../..
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DDiscordRPC_INCLUDE_DIR=%{builddir}/discord-rpc/include \
-  -DDiscordRPC_LIBRARY=%{builddir}/discord-rpc/build/libdiscord-rpc.a \
+  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/duckstation-0.1-9226/discord-rpc/include \
+  -DDiscordRPC_LIBRARY=%{_builddir}/duckstation-0.1-9226/discord-rpc/build/libdiscord-rpc.a \
   -DDiscordRPC_FOUND=TRUE
 
 %ninja_build -C build
-
-%install
-%ninja_install -C build
 
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
