@@ -1,23 +1,25 @@
 Name:           duckstation
-Version:        0.1.9226
+Version:        0.1-9226
 Release:        1%{?dist}
-Summary:        Fast PlayStation 1 emulator
+Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# Actual extracted directory uses Version, not tag
-%global project_dir     duckstation-%{version}
+# Using the official release tag with dash
+%global tag_name        v%{version}
+%global project_dir     duckstation-%{tag_name}
 %global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 
-Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{version}.tar.gz
+Source0:        https://github.com/duckstation/old-releases/archive/refs/tags/%{tag_name}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_ver}.tar.gz
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 
-# Core dependencies
+# Core dependencies (same list you gave)
+
 BuildRequires:  SDL3-devel
 BuildRequires:  SDL3_image-devel
 BuildRequires:  SDL3_ttf-devel
@@ -30,7 +32,6 @@ BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qt5compat-devel
 
-# Multimedia and graphics
 BuildRequires:  mesa-libGL-devel
 BuildRequires:  mesa-libEGL-devel
 BuildRequires:  vulkan-devel
@@ -40,26 +41,22 @@ BuildRequires:  libavutil-free-devel
 BuildRequires:  libswresample-free-devel
 BuildRequires:  libswscale-free-devel
 
-# Networking and compression
 BuildRequires:  libcurl-devel
 BuildRequires:  openssl-devel
 BuildRequires:  zlib-devel
 BuildRequires:  brotli-devel
 BuildRequires:  minizip-compat-devel
 
-# Fonts and image support
 BuildRequires:  fontconfig-devel
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  libpng-devel
 
-# Audio and input
 BuildRequires:  pulseaudio-libs-devel
 BuildRequires:  pipewire-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
 
-# Wayland/X11/windowing
 BuildRequires:  egl-wayland-devel
 BuildRequires:  gtk3-devel
 BuildRequires:  dbus-devel
@@ -67,7 +64,6 @@ BuildRequires:  systemd-devel
 BuildRequires:  wayland-devel
 BuildRequires:  libdecor-devel
 
-# X11-specific
 BuildRequires:  libSM-devel
 BuildRequires:  libICE-devel
 BuildRequires:  libX11-devel
@@ -93,25 +89,27 @@ BuildRequires:  xcb-util-xrm-devel
 BuildRequires:  libxkbcommon-devel
 BuildRequires:  libxkbcommon-x11-devel
 
-# CPU detection
 BuildRequires:  cpuinfo-devel
 
 ExclusiveArch:  x86_64 aarch64
 
 %description
-DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
+DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
 
 %prep
+# Extract official release archive, which will unpack to duckstation-v0.1-9226
 %setup -q -n %{project_dir}
 
-# Extract and move embedded DiscordRPC
+# Extract DiscordRPC source and embed it
 tar -xf %{SOURCE1}
 mv discord-rpc-%{discord_rpc_ver} discord-rpc
 
 %build
 pushd discord-rpc
 mkdir -p build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --target discord-rpc
 popd
 
@@ -144,8 +142,7 @@ install -Dm644 %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstatio
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Thu Jul 31 2025 Monkegold <o53cbexp0@mozmail.com> - 0.1.9226-1
-- Updated to tag v0.1-9226
-- Switched to SDL3
-- Embedded DiscordRPC build
-- Fixed build directory naming
+* Thu Jul 31 2025 Monkegold <o53cbexp0@mozmail.com> - 0.1-9226-1
+- Switched spec to use official release tag v0.1-9226
+- Fixed directory naming to match extracted folder
+- Embedded DiscordRPC with manual build
