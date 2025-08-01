@@ -1,6 +1,6 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
@@ -20,7 +20,7 @@ BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 BuildRequires:  extra-cmake-modules
-BuildRequires:  shaderc-devel
+BuildRequires:  libshaderc-devel
 
 # Core deps
 BuildRequires:  SDL3-devel
@@ -213,7 +213,6 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug 1 2025 Monkegold <you@example.com> — 0.1.9226-3
-- Added shaderc-devel BuildRequires  
-- Passed -DShaderc_DIR to %cmake for Shaderc detection  
-- Bumped Release to 3  
+* Fri Aug 1 2025 Monkegold <you@example.com> — 0.1.9226-4
+- Switched BuildRequires from shaderc-devel to libshaderc-devel  
+- Ensured -DShaderc_DIR still points to /usr/lib64/cmake/shaderc  
