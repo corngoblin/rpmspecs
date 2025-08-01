@@ -26,7 +26,7 @@ BuildRequires:  git
 BuildRequires:  ninja-build
 BuildRequires:  pkgconfig
 BuildRequires:  libshaderc-devel
-BuildRequires:  glibc-devel
+BuildRequires:  libbacktrace-devel
 
 # Core UI
 BuildRequires:  SDL3-devel
@@ -244,7 +244,6 @@ install -Dm644 \
 
 %changelog
 * Fri Aug 2 2025 You <you@example.com> - 0.1.9226-7
-- Fixed build failure by adding glibc-devel to BuildRequires.
-- On Fedora, the files for libbacktrace are provided by glibc-devel,
-- not a separate libbacktrace-devel package.
-- This allows the CMake configuration to find the required dependency.
+- Fixed build failure by adding libbacktrace-devel to BuildRequires.
+- This is the correct package on Fedora for the libbacktrace library,
+- allowing the build to find the required development files.
