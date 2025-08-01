@@ -6,12 +6,12 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# Discord RPC branch and tarball filename
-%global discord_rpc_ver master
+# Pin to the discord-rpc commit hash from the build script for reproducibility
+%global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 %global discord_rpc_file %{discord_rpc_ver}.tar.gz
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz
-Source1:        https://github.com/stenzek/discord-rpc/archive/refs/heads/%{discord_rpc_file}
+Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
@@ -21,7 +21,6 @@ BuildRequires:  gcc-c++
 BuildRequires:  SDL3-devel
 BuildRequires:  SDL3_image-devel
 BuildRequires:  SDL3_ttf-devel
-BuildRequires:  SDL2-devel
 BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qttools-devel
 BuildRequires:  qt6-qtsvg-devel
@@ -109,12 +108,12 @@ mkdir -p discord-rpc
 tar -xzf %{_sourcedir}/%{discord_rpc_file} -C discord-rpc --strip-components=1
 
 %build
-pushd discord-rpc
-mkdir -p build
+cd discord-rpc
+mkdir build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --target discord-rpc
-popd
+cd ../..
 
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
