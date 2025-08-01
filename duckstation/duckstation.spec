@@ -6,15 +6,23 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz#/duckstation-%{version}.tar.gz
-Patch0:         duckstation-find_appropriate_shaderc.patch
-Patch1:         duckstation-stop_nagging.patch
 
+# Core build tools
 BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
-BuildRequires:  clang-devel
+BuildRequires:  make
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  patch
+BuildRequires:  perl-Digest-SHA
+BuildRequires:  nasm
+BuildRequires:  llvm
+BuildRequires:  clang
 BuildRequires:  lld
-BuildRequires:  extra-cmake-modules
+BuildRequires:  libtool
+
+# Qt6 dependencies
 BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qttools-devel
 BuildRequires:  qt6-qtsvg-devel
@@ -24,103 +32,102 @@ BuildRequires:  qt6-qtx11extras-devel
 BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qt5compat-devel
+
+# Multimedia & graphics
 BuildRequires:  SDL2-devel
 BuildRequires:  mesa-libGL-devel
+BuildRequires:  mesa-libEGL-devel
 BuildRequires:  vulkan-devel
-BuildRequires:  minizip-compat-devel
+BuildRequires:  libavcodec-free-devel
+BuildRequires:  libavformat-free-devel
+BuildRequires:  libavutil-free-devel
+BuildRequires:  libswresample-free-devel
+BuildRequires:  libswscale-free-devel
+BuildRequires:  libcurl-devel
+BuildRequires:  openssl-devel
 BuildRequires:  zlib-devel
+BuildRequires:  brotli-devel
+BuildRequires:  fontconfig-devel
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  libpng-devel
-BuildRequires:  pkgconfig
-BuildRequires:  glslang-devel
-BuildRequires:  imgui-devel
+BuildRequires:  minizip-compat-devel
+
+# X11 & Wayland libraries
+BuildRequires:  gtk3-devel
+BuildRequires:  egl-wayland-devel
+BuildRequires:  dbus-devel
+BuildRequires:  systemd-devel
+BuildRequires:  wayland-devel
+BuildRequires:  pipewire-devel
+BuildRequires:  pulseaudio-libs-devel
+
+BuildRequires:  alsa-lib-devel
+BuildRequires:  libdecor-devel
+BuildRequires:  libevdev-devel
+BuildRequires:  libinput-devel
+
+BuildRequires:  libSM-devel
+BuildRequires:  libICE-devel
+BuildRequires:  libX11-devel
+BuildRequires:  libXau-devel
+BuildRequires:  libxcb-devel
+BuildRequires:  libXcomposite-devel
+BuildRequires:  libXcursor-devel
+BuildRequires:  libXext-devel
+BuildRequires:  libXfixes-devel
+BuildRequires:  libXft-devel
+BuildRequires:  libXi-devel
+BuildRequires:  libxkbcommon-devel
+BuildRequires:  libxkbcommon-x11-devel
+BuildRequires:  libXpresent-devel
+BuildRequires:  libXrandr-devel
+BuildRequires:  libXrender-devel
+
+# XCB utilities
+BuildRequires:  xcb-util-cursor-devel
+BuildRequires:  xcb-util-devel
+BuildRequires:  xcb-util-errors-devel
+BuildRequires:  xcb-util-image-devel
+BuildRequires:  xcb-util-keysyms-devel
+BuildRequires:  xcb-util-renderutil-devel
+BuildRequires:  xcb-util-wm-devel
+BuildRequires:  xcb-util-xrm-devel
 
 ExclusiveArch:  x86_64 aarch64
 
 %description
-DuckStation is a fast and accurate PlayStation 1 emulator,
-focused on speed, playability, and long-term maintainability.
+DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed,
+playability, and long-term maintainability.
 
 %prep
-%autosetup -p1 -n duckstation-%{version}
-# Fix patches similar to openSUSE spec
-sed -i -e '/ENABLE_DISCORD_PRESENCE 1/d' src/core/system.cpp || :
-sed -i '/DiscordRPC/d' CMakeModules/DuckStationDependencies.cmake || :
+%autosetup -n duckstation-0.1-9226
 
 %build
-ulimit -Sn 4000
+%cmake -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DUSE_QT6=ON \
+  -DDUCKSTATION_QT_UI=ON
 
-# Use clang and lld if available (fallback to gcc/g++)
-%ifarch x86_64 aarch64
-export CC=clang
-export CXX=clang++
-export LD=ld.lld
-export LDFLAGS="-fuse-ld=lld -Wl,--gc-sections -Wl,-O1 -Wl,--icf=safe"
-export CFLAGS="%{optflags} -fPIC -O3"
-export CXXFLAGS="%{optflags} -fPIC -O3"
-%else
-export CC=gcc
-export CXX=g++
-export LD=ld.gold
-export LDFLAGS="-fuse-ld=gold -Wl,--gc-sections -Wl,-O1"
-export CFLAGS="%{optflags} -fPIC -O3"
-export CXXFLAGS="%{optflags} -fPIC -O3"
-%endif
-
-%cmake .. \
-  -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DUSE_PCH=OFF \
-  -DENABLE_PCH=OFF \
-  -DENABLE_PRECOMPILED_HEADERS=OFF \
-  -DSKIP_PRECOMPILE_HEADERS=ON \
-  -DUSE_PRECOMPILED_HEADERS=OFF \
-  -DCMAKE_INSTALL_PREFIX=%{_prefix} \
-  -DCMAKE_C_COMPILER=${CC} \
-  -DCMAKE_CXX_COMPILER=${CXX} \
-  -DCMAKE_LINKER=${LD} \
-  -DCMAKE_C_FLAGS="${CFLAGS}" \
-  -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
-  -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS}" \
-  -DENABLE_DISCORD_PRESENCE=OFF \
-  -DUSE_FBDEV=ON \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DBUILD_STATIC_LIBS=ON
-
-%ninja_build
+%ninja_build -C build
 
 %install
-mkdir -p %{buildroot}%{_libexecdir}/%{name}
-mv %{_builddir}/duckstation-%{version}/build/bin/* %{buildroot}%{_libexecdir}/%{name}/
+%ninja_install -C build
 
-mkdir -p %{buildroot}%{_bindir}
-ln -s %{_libexecdir}/%{name}/%{name}-qt %{buildroot}%{_bindir}/
+# Install desktop file and icon if present
+desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
+  %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop || :
 
-install -d -m 0755 %{buildroot}%{_datadir}/pixmaps
-ln -s %{_libexecdir}/%{name}/resources/images/duck.png %{buildroot}%{_datadir}/pixmaps/%{name}.png
-
-install -d %{buildroot}%{_datadir}/applications
-cat > %{buildroot}%{_datadir}/applications/%{name}.desktop << EOF
-[Desktop Entry]
-Name=DuckStation
-Comment=%{summary}
-Exec=%{_bindir}/%{name}-qt
-Icon=%{name}
-Terminal=false
-Type=Application
-StartupNotify=true
-Categories=Game;Emulator;
-EOF
+install -Dm644 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
+  %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png || :
 
 %files
 %license LICENSE
 %doc README.md
-%{_bindir}/%{name}-qt
-%{_libexecdir}/%{name}
-%{_datadir}/pixmaps/%{name}.png
-%{_datadir}/applications/%{name}.desktop
+%{_bindir}/duckstation-qt
+%{_datadir}/applications/org.duckstation.DuckStation.desktop
+%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Thu Jul 01 2025 Monkeygold <you@example.com> - 0.1.9226-1
-- Improved Fedora spec with clang/lld support and patches from openSUSE spec
-- Disabled Discord presence, added explicit install layout
+* Thu Aug 01 2025 Rob <you@example.com> - 0.1.9226-1
+- Added full Fedora build dependencies to match GitHub recommendations
+- Fixed build macros for Fedora 41/42/Rawhide COPR build
