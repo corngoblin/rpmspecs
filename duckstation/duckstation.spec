@@ -20,7 +20,7 @@ BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 
-# Core deps
+# DuckStation dependencies
 BuildRequires:  SDL3-devel
 BuildRequires:  SDL3_image-devel
 BuildRequires:  SDL3_ttf-devel
@@ -70,7 +70,7 @@ BuildRequires:  systemd-devel
 BuildRequires:  wayland-devel
 BuildRequires:  libdecor-devel
 
-# X11-specific deps
+# X11-specific
 BuildRequires:  libSM-devel
 BuildRequires:  libICE-devel
 BuildRequires:  libX11-devel
@@ -96,8 +96,11 @@ BuildRequires:  xcb-util-xrm-devel
 BuildRequires:  libxkbcommon-devel
 BuildRequires:  libxkbcommon-x11-devel
 
-# CPU detection
+# CPU features
 BuildRequires:  cpuinfo-devel
+
+# << NEW >> SoundTouch is required by DuckStationDependencies.cmake
+BuildRequires:  soundtouch-devel
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -113,7 +116,7 @@ mkdir -p discord-rpc
 tar -xzf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
-# 3) Drop in a custom FindDiscordRPC.cmake so find_package works
+# 3) Inject custom FindDiscordRPC.cmake so find_package(DiscordRPC) works
 mkdir -p CMakeModules
 cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
 # FindDiscordRPC.cmake — locate our vendored static Discord-RPC
@@ -145,7 +148,7 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Configure DuckStation, pointing at our vendored RPC and CMake module
+# Configure DuckStation to pick up vendored RPC and system SoundTouch
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
@@ -153,14 +156,14 @@ popd
   -DDISCORDRPC_SUPPORT=ON \
   -DCMAKE_MODULE_PATH=$PWD/CMakeModules
 
-# Build DuckStation
+# Compile DuckStation
 ninja -C build
 
 %install
-# Stage everything into %{buildroot}
+# Stage into %{buildroot}
 ninja -C build install DESTDIR=%{buildroot}
 
-# Install desktop file & icon (ignore upstream re-install errors)
+# Install desktop file & icon (no error if already present)
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
 
@@ -176,7 +179,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug  1 2025 Monkegold <o533333cbexp0@mozmail.com> - 0.1.9226-1
-- Vendored Discord-RPC, built static in-tree
-- Added custom FindDiscordRPC.cmake + CMAKE_MODULE_PATH
-- Retained dash-free RPM Version; actual tag in %{upstream_tag}
+* Fri Aug  1 2025 Monkegold <you@example.com> - 0.1.9226-1
+- Added soundtouch-devel to satisfy find_package(SoundTouch)
+- Vendored Discord-RPC with custom FindDiscordRPC.cmake
+- Retained dash-free Version; actual tag in %{upstream_tag}
