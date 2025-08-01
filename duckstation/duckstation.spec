@@ -27,85 +27,39 @@ BuildRequires:  pkgconfig
 BuildRequires:  libshaderc-devel
 
 # Core deps
-BuildRequires:  SDL3-devel
-BuildRequires:  SDL3_image-devel
-BuildRequires:  SDL3_ttf-devel
-BuildRequires:  qt6-qtbase-devel
-BuildRequires:  qt6-qttools-devel
-BuildRequires:  qt6-qtsvg-devel
-BuildRequires:  qt6-qtmultimedia-devel
-BuildRequires:  qt6-qtshadertools-devel
-BuildRequires:  qt6-qtwayland-devel
-BuildRequires:  qt6-qtdeclarative-devel
-BuildRequires:  qt6-qt5compat-devel
+BuildRequires:  SDL3-devel SDL3_image-devel SDL3_ttf-devel
+BuildRequires:  qt6-qtbase-devel qt6-qttools-devel qt6-qtsvg-devel
+BuildRequires:  qt6-qtmultimedia-devel qt6-qtshadertools-devel
+BuildRequires:  qt6-qtwayland-devel qt6-qtdeclarative-devel qt6-qt5compat-devel
 
 # Multimedia & graphics
-BuildRequires:  mesa-libGL-devel
-BuildRequires:  mesa-libEGL-devel
-BuildRequires:  vulkan-devel
-BuildRequires:  libavcodec-free-devel
-BuildRequires:  libavformat-free-devel
-BuildRequires:  libavutil-free-devel
-BuildRequires:  libswresample-free-devel
-BuildRequires:  libswscale-free-devel
+BuildRequires:  mesa-libGL-devel mesa-libEGL-devel vulkan-devel
+BuildRequires:  libavcodec-free-devel libavformat-free-devel
+BuildRequires:  libavutil-free-devel libswresample-free-devel libswscale-free-devel
 
 # Networking & compression
-BuildRequires:  libcurl-devel
-BuildRequires:  openssl-devel
-BuildRequires:  zlib-devel
-BuildRequires:  brotli-devel
-BuildRequires:  minizip-compat-devel
+BuildRequires:  libcurl-devel openssl-devel zlib-devel
+BuildRequires:  brotli-devel minizip-compat-devel
 
 # Fonts & images
-BuildRequires:  fontconfig-devel
-BuildRequires:  libjpeg-turbo-devel
-BuildRequires:  libpng-devel
+BuildRequires:  fontconfig-devel libjpeg-turbo-devel libpng-devel
 
 # Audio & input
-BuildRequires:  pulseaudio-libs-devel
-BuildRequires:  pipewire-devel
-BuildRequires:  alsa-lib-devel
-BuildRequires:  libevdev-devel
-BuildRequires:  libinput-devel
+BuildRequires:  pulseaudio-libs-devel pipewire-devel
+BuildRequires:  alsa-lib-devel libevdev-devel libinput-devel
 
 # Windowing (Wayland, X11, etc.)
-BuildRequires:  egl-wayland-devel
-BuildRequires:  gtk3-devel
-BuildRequires:  dbus-devel
-BuildRequires:  systemd-devel
-BuildRequires:  wayland-devel
-BuildRequires:  libdecor-devel
-BuildRequires:  libSM-devel
-BuildRequires:  libICE-devel
-BuildRequires:  libX11-devel
-BuildRequires:  libXau-devel
-BuildRequires:  libxcb-devel
-BuildRequires:  libXcomposite-devel
-BuildRequires:  libXcursor-devel
-BuildRequires:  libXext-devel
-BuildRequires:  libXfixes-devel
-BuildRequires:  libXft-devel
-BuildRequires:  libXi-devel
-BuildRequires:  libXpresent-devel
-BuildRequires:  libXrandr-devel
-BuildRequires:  libXrender-devel
-BuildRequires:  xcb-util-cursor-devel
-BuildRequires:  xcb-util-devel
-BuildRequires:  xcb-util-errors-devel
-BuildRequires:  xcb-util-image-devel
-BuildRequires:  xcb-util-keysyms-devel
-BuildRequires:  xcb-util-renderutil-devel
-BuildRequires:  xcb-util-wm-devel
-BuildRequires:  xcb-util-xrm-devel
-BuildRequires:  libxkbcommon-devel
-BuildRequires:  libxkbcommon-x11-devel
+BuildRequires:  egl-wayland-devel gtk3-devel dbus-devel systemd-devel
+BuildRequires:  wayland-devel libdecor-devel libSM-devel libICE-devel
+BuildRequires:  libX11-devel libXau-devel libxcb-devel libXcomposite-devel
+BuildRequires:  libXcursor-devel libXext-devel libXfixes-devel libXft-devel
+BuildRequires:  libXi-devel libXpresent-devel libXrandr-devel libXrender-devel
+BuildRequires:  xcb-util-cursor-devel xcb-util-devel xcb-util-errors-devel
+BuildRequires:  xcb-util-image-devel xcb-util-keysyms-devel xcb-util-renderutil-devel
+BuildRequires:  xcb-util-wm-devel xcb-util-xrm-devel libxkbcommon-devel libxkbcommon-x11-devel
 
-# CPU features
-BuildRequires:  cpuinfo-devel
-
-# satisfy find_package(libzip) & find_package(SoundTouch)
-BuildRequires:  libzip-devel
-BuildRequires:  soundtouch-devel
+# CPU features & extras
+BuildRequires:  cpuinfo-devel libzip-devel soundtouch-devel
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -115,23 +69,23 @@ DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, pla
 %prep
 %autosetup -n duckstation-%{upstream_tag} -p1
 
-# Vendor in Discord-RPC
+# Vendor Discord-RPC
 mkdir -p discord-rpc
 tar xf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
-# Vendor SPIRV-Cross (C-shared target only)
+# Vendor SPIRV-Cross C-API (shared)
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Cross.git spirv-cross
 pushd spirv-cross
 mkdir build-spirv && cd build-spirv
 cmake .. \
   -DBUILD_SHARED_LIBS=ON \
-  -DSPIRV_CROSS_C_SHARED=ON \
-  -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=ON \
+  -DSPIRV_CROSS_C_API=ON \
+  -DBUILD_TESTING=OFF \
   -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 popd
 
-# Prepare custom CMake find-modules
+# Custom CMake find-modules
 mkdir -p CMakeModules
 
 # FindDiscordRPC.cmake
@@ -143,56 +97,12 @@ find_library(DiscordRPC_LIBRARY
   NAMES discord-rpc libdiscord-rpc
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/build
 )
-if(DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
+if (DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
   set(DiscordRPC_FOUND       TRUE)
   set(DiscordRPC_INCLUDE_DIRS ${DiscordRPC_INCLUDE_DIR})
   set(DiscordRPC_LIBRARIES   ${DiscordRPC_LIBRARY})
 endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
-EOF
-
-# Findlibzip.cmake
-cat > CMakeModules/Findlibzip.cmake << 'EOF'
-find_path(libzip_INCLUDE_DIR zip.h
-  PATHS %{_includedir}
-)
-find_library(libzip_LIBRARY
-  NAMES zip libzip
-  PATHS %{_libdir}
-)
-if(libzip_INCLUDE_DIR AND libzip_LIBRARY)
-  set(libzip_FOUND       TRUE)
-  set(libzip_INCLUDE_DIRS ${libzip_INCLUDE_DIR})
-  set(libzip_LIBRARIES   ${libzip_LIBRARY})
-endif()
-mark_as_advanced(libzip_INCLUDE_DIR libzip_LIBRARY)
-EOF
-
-# FindSoundTouch.cmake
-cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
-find_path(SoundTouch_INCLUDE_DIR SoundTouch.h
-  PATHS %{_includedir}
-)
-find_library(SoundTouch_LIBRARY
-  NAMES SoundTouch
-  PATHS %{_libdir}
-)
-if(SoundTouch_INCLUDE_DIR AND SoundTouch_LIBRARY)
-  set(SoundTouch_FOUND       TRUE)
-  set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDE_DIR})
-  set(SoundTouch_LIBRARIES   ${SoundTouch_LIBRARY})
-endif()
-mark_as_advanced(SoundTouch_INCLUDE_DIR SoundTouch_LIBRARY)
-EOF
-
-# FindShaderc.cmake (wraps pkg-config)
-cat > CMakeModules/FindShaderc.cmake << 'EOF'
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(Shaderc REQUIRED shaderc)
-set(Shaderc_FOUND        TRUE)
-set(Shaderc_INCLUDE_DIRS ${Shaderc_INCLUDEDIR})
-set(Shaderc_LIBRARIES    ${Shaderc_LIBRARIES})
-mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
 EOF
 
 # Findspirv_cross_c_shared.cmake
@@ -205,7 +115,7 @@ find_library(spirv_cross_c_shared_LIBRARY
   NAMES spirv_cross_c_shared spirv-cross-c-shared
   PATHS ${CMAKE_SOURCE_DIR}/spirv-cross/build-spirv
 )
-if(spirv_cross_c_shared_INCLUDE_DIR AND spirv_cross_c_shared_LIBRARY)
+if (spirv_cross_c_shared_INCLUDE_DIR AND spirv_cross_c_shared_LIBRARY)
   set(spirv_cross_c_shared_FOUND        TRUE)
   set(spirv_cross_c_shared_INCLUDE_DIRS ${spirv_cross_c_shared_INCLUDE_DIR})
   set(spirv_cross_c_shared_LIBRARIES    ${spirv_cross_c_shared_LIBRARY})
@@ -224,30 +134,27 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Build SPIRV-Cross C-shared wrapper
+# Build SPIRV-Cross C-API (shared + static)
 pushd spirv-cross/build-spirv
-cmake --build . --target spirv_cross_c_shared
+cmake --build .
 popd
 
-# Configure DuckStation
-%cmake -S . -B build \
-  -G Ninja \
+# Configure & build DuckStation
+%cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
   -DCMAKE_MODULE_PATH=%{_sourcedir}/CMakeModules \
   -DECM_DIR=%{_libdir}/cmake/ECM
-
 ninja -C build
 
 %install
 ninja -C build install DESTDIR=%{buildroot}
 
-# Install desktop file & icon
+# desktop file & icon
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
-
 install -Dm644 \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
@@ -261,6 +168,5 @@ install -Dm644 \
 
 %changelog
 * Fri Aug  1 2025 You <you@example.com> — 0.1.9226-7
-- Vendored SPIRV-Cross C-shared wrapper  
-- Added Findspirv_cross_c_shared.cmake  
-- Removed requirement for nonexistent spirv-cross devel RPM  
+- switch SPIRV-Cross vendor cmake flag to `-DSPIRV_CROSS_C_API=ON`
+- build entire SPIRV-Cross C-API subtree instead of non-existent target
