@@ -7,11 +7,11 @@ License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
 # pinned Discord-RPC commit for reproducible builds
-%global discord_rpc_ver   cc59d26d1d628fbd6527aac0ac1d6301f4978b92
-%global discord_rpc_file  %{discord_rpc_ver}.tar.gz
+%global discord_rpc_ver    cc59d26d1d628fbd6527aac0ac1d6301f4978b92
+%global discord_rpc_file   %{discord_rpc_ver}.tar.gz
 
 # real upstream tag (contains a dash)
-%global upstream_tag      0.1-9226
+%global upstream_tag     0.1-9226
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
@@ -124,14 +124,6 @@ tar xf %{_sourcedir}/%{discord_rpc_file} \
 # Vendor SPIRV-Cross C-API (shared)
 git clone --depth=1 \
     https://github.com/KhronosGroup/SPIRV-Cross.git spirv-cross
-pushd spirv-cross
-mkdir build-spirv && cd build-spirv
-cmake .. \
-    -DBUILD_SHARED_LIBS=ON \
-    -DSPIRV_CROSS_C_API=ON \
-    -DBUILD_TESTING=OFF \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-popd
 
 # Custom CMake find-modules
 mkdir -p CMakeModules
@@ -146,42 +138,49 @@ find_library(DiscordRPC_LIBRARY
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/build
 )
 if (DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
-  set(DiscordRPC_FOUND       TRUE)
+  set(DiscordRPC_FOUND        TRUE)
   set(DiscordRPC_INCLUDE_DIRS ${DiscordRPC_INCLUDE_DIR})
-  set(DiscordRPC_LIBRARIES   ${DiscordRPC_LIBRARY})
+  set(DiscordRPC_LIBRARIES    ${DiscordRPC_LIBRARY})
 endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
 
-# 2) Findspirv_cross_c_shared.cmake
+# 2) Findspirv_cross_c_shared.cmake (FIXED)
 cat > CMakeModules/Findspirv_cross_c_shared.cmake << 'EOF'
 find_path(spirv_cross_c_shared_INCLUDE_DIR
   NAMES spirv_cross_c.h
-  PATHS ${CMAKE_SOURCE_DIR}/spirv-cross
+  PATHS ${CMAKE_SOURCE_DIR}/spirv-cross/include
 )
 find_library(spirv_cross_c_shared_LIBRARY
-  NAMES spirv_cross_c_shared spirv-cross-c-shared
-  PATHS ${CMAKE_SOURCE_DIR}/spirv-cross/build-spirv
+  NAMES spirv-cross-c-shared
+  PATHS ${CMAKE_BINARY_DIR}/spirv-cross/build-spirv
 )
 if (spirv_cross_c_shared_INCLUDE_DIR AND spirv_cross_c_shared_LIBRARY)
-  set(spirv_cross_c_shared_FOUND        TRUE)
-  set(spirv_cross_c_shared_INCLUDE_DIRS ${spirv_cross_c_shared_INCLUDE_DIR})
-  set(spirv_cross_c_shared_LIBRARIES    ${spirv_cross_c_shared_LIBRARY})
+  set(spirv_cross_c_shared_FOUND         TRUE)
+  set(spirv_cross_c_shared_INCLUDE_DIRS  ${spirv_cross_c_shared_INCLUDE_DIR})
+  set(spirv_cross_c_shared_LIBRARIES     ${spirv_cross_c_shared_LIBRARY})
+
+  # Create an imported target for CMake to find
+  add_library(spirv-cross-c-shared SHARED IMPORTED)
+  set_target_properties(spirv-cross-c-shared PROPERTIES
+    IMPORTED_LOCATION "${spirv_cross_c_shared_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${spirv_cross_c_shared_INCLUDE_DIR}"
+  )
 endif()
 mark_as_advanced(spirv_cross_c_shared_INCLUDE_DIR spirv_cross_c_shared_LIBRARY)
 EOF
 
-# 3) FindShaderc.cmake
+# 3) FindShaderc.cmake (FIXED)
 cat > CMakeModules/FindShaderc.cmake << 'EOF'
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Shaderc REQUIRED shaderc)
-set(Shaderc_FOUND        TRUE)
-set(Shaderc_INCLUDE_DIRS ${Shaderc_INCLUDEDIR})
-set(Shaderc_LIBRARIES    ${Shaderc_LIBRARIES})
+set(Shaderc_FOUND         TRUE)
+set(Shaderc_INCLUDE_DIRS  ${Shaderc_INCLUDEDIR})
+set(Shaderc_LIBRARIES     ${Shaderc_LIBRARIES})
 
 get_filename_component(_shlib_dir ${Shaderc_LIBRARIES} PATH)
 set(_shlib "${_shlib_dir}/libshaderc_shared.so")
-add_library(Shaderc::shaderc_shared UNKNOWN IMPORTED GLOBAL)
+add_library(Shaderc::shaderc_shared SHARED IMPORTED GLOBAL)
 set_target_properties(Shaderc::shaderc_shared PROPERTIES
   IMPORTED_LOCATION "${_shlib}"
   INTERFACE_INCLUDE_DIRECTORIES "${Shaderc_INCLUDEDIR}"
@@ -200,9 +199,14 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Build SPIRV-Cross C-API
-pushd spirv-cross/build-spirv
-cmake --build .
+# Build SPIRV-Cross C-API (and make it available)
+mkdir -p spirv-cross/build-spirv && pushd spirv-cross/build-spirv
+cmake .. \
+    -DBUILD_SHARED_LIBS=ON \
+    -DSPIRV_CROSS_C_API=ON \
+    -DBUILD_TESTING=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+cmake --build . --target spirv-cross-c-shared
 popd
 
 # Configure & build DuckStation
@@ -236,7 +240,8 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug 1 2025 You <you@example.com> — 0.1.9226-7
-- Added imported CMake target `Shaderc::shaderc_shared` in FindShaderc.cmake
-- Switched SPIRV-Cross vendor flag to `-DSPIRV_CROSS_C_API=ON`
-- Removed build of nonexistent SPIRV-Cross C-shared target
+* Fri Aug 2 2025 You <you@example.com> - 0.1.9226-7
+- Added imported CMake target for spirv-cross-c-shared in Findspirv_cross_c_shared.cmake
+- Modified FindShaderc.cmake to use SHARED IMPORTED target for consistency
+- Moved SPIRV-Cross build to %build section to ensure correct build order
+- Corrected location of SPIRV-Cross headers in Findspirv_cross_c_shared.cmake
