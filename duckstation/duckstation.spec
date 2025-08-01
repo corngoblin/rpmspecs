@@ -18,7 +18,6 @@ BuildRequires:  qt6-qttools-devel
 BuildRequires:  qt6-qtsvg-devel
 BuildRequires:  qt6-qtmultimedia-devel
 BuildRequires:  qt6-qtshadertools-devel
-# qt6-qtx11extras-devel removed (not in Fedora 42)
 BuildRequires:  qt6-qtwayland-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qt5compat-devel
@@ -88,13 +87,13 @@ DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, p
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
-  -DDUCKSTATION_QT_UI=ON
+  -DDUCKSTATION_QT_UI=ON \
+  -DDUCKSTATION_DISCORD_RPC=OFF
 %ninja_build -C build
 
 %install
 %ninja_install -C build
 
-# Optional desktop files/icons if present
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
 install -Dm644 %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
@@ -112,3 +111,4 @@ install -Dm644 %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstatio
 - Included SDL3 devel packages to satisfy find_package(SDL3)
 - Removed qt6‑qtx11extras-devel (unavailable in Fedora 42)
 - Added cpuinfo-devel to satisfy upstream hardware detection
+- Disabled DiscordRPC to avoid missing CMake package error
