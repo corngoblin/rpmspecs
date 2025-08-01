@@ -121,7 +121,8 @@ cd ../..
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
   -DDiscordRPC_INCLUDE_DIR=%{_builddir}/duckstation-0.1-9226/discord-rpc/include \
-  -DDiscordRPC_LIBRARY=%{_builddir}/duckstation-0.1-9226/discord-rpc/build/libdiscord-rpc.a
+  -DDiscordRPC_LIBRARY=%{_builddir}/duckstation-0.1-9226/discord-rpc/build/libdiscord-rpc.a \
+  -DDiscordRPC_FOUND=TRUE
 
 %ninja_build -C build
 
