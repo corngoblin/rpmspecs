@@ -1,6 +1,6 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
@@ -10,17 +10,16 @@ URL:            https://github.com/stenzek/duckstation
 %global discord_rpc_ver   cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 %global discord_rpc_file  %{discord_rpc_ver}.tar.gz
 
-# pinned Shaderc release
-%global shaderc_ver       2023.6.0
-%global shaderc_file      v%{shaderc_ver}.tar.gz
+# pin Shaderc tag
+%global shaderc_tag       v2025.3
 
 # real upstream tag (contains a dash)
 %global upstream_tag      0.1-9226
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
-Source2:        https://github.com/google/shaderc/archive/refs/tags/%{shaderc_file}
 
+BuildRequires:  git
 BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
@@ -113,19 +112,20 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long-term maintainability.
 
 %prep
-%setup -q -n duckstation-%{upstream_tag}
+%autosetup -n duckstation-%{upstream_tag} -p1
 
 # Vendor in Discord-RPC
 mkdir -p discord-rpc
-tar -xzf %{_sourcedir}/%{discord_rpc_file} \
+tar xf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
-# Vendor in Shaderc
-mkdir -p shaderc
-tar -xzf %{_sourcedir}/%{shaderc_file} \
-    --strip-components=1 -C shaderc
+# Clone exact Shaderc release
+git clone --branch %{shaderc_tag} --depth 1 https://github.com/google/shaderc.git shaderc
+pushd shaderc
+./utils/git-sync-deps
+popd
 
-# Inject custom CMakeModules
+# Inject custom CMakeModules for 3rd-party finds
 mkdir -p CMakeModules
 
 # FindDiscordRPC.cmake
@@ -190,7 +190,7 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Build vendored Shaderc
+# Build vendored Shaderc v2025.3
 pushd shaderc
 mkdir build && cd build
 cmake .. \
@@ -200,7 +200,7 @@ cmake .. \
 cmake --build .
 popd
 
-# Configure DuckStation
+# Configure DuckStation to use our vendored Shaderc
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
@@ -211,7 +211,6 @@ popd
   -DShaderc_INCLUDE_DIR=$PWD/shaderc/include \
   -DShaderc_LIBRARY=$PWD/shaderc/build/libshaderc_combined.a
 
-# Build
 ninja -C build
 
 %install
@@ -233,7 +232,8 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug  1 2025 Monkegold <you@example.com> — 0.1.9226-4
-- Vendored Shaderc from GitHub and built it alongside Discord-RPC  
+* Fri Aug 1 2025 Monkegold <you@example.com> — 0.1.9226-5
+- Switched Shaderc to tag v2025.3 from GitHub  
 - Removed system libshaderc-devel requirement  
-- Pointed CMake at vendored shaderc headers & library  
+- Cloned and built Shaderc v2025.3 in %prep/%build steps  
+- Pointed CMake at vendored shaderc headers & static library  
