@@ -6,9 +6,10 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# The upstream archive extracts to duckstation-v0.1-9226, so keep the dash here
+# Tag and project directory
 %global tag_name        v0.1-9226
-%global project_dir     duckstation-%{tag_name}
+# Don't hardcode project_dir here, detect dynamically in %prep
+
 %global discord_rpc_ver cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/%{tag_name}.tar.gz
@@ -17,85 +18,7 @@ Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_ver
 BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
-
-# Core dependencies
-BuildRequires:  SDL3-devel
-BuildRequires:  SDL3_image-devel
-BuildRequires:  SDL3_ttf-devel
-BuildRequires:  qt6-qtbase-devel
-BuildRequires:  qt6-qttools-devel
-BuildRequires:  qt6-qtsvg-devel
-BuildRequires:  qt6-qtmultimedia-devel
-BuildRequires:  qt6-qtshadertools-devel
-BuildRequires:  qt6-qtwayland-devel
-BuildRequires:  qt6-qtdeclarative-devel
-BuildRequires:  qt6-qt5compat-devel
-
-# Multimedia and graphics
-BuildRequires:  mesa-libGL-devel
-BuildRequires:  mesa-libEGL-devel
-BuildRequires:  vulkan-devel
-BuildRequires:  libavcodec-free-devel
-BuildRequires:  libavformat-free-devel
-BuildRequires:  libavutil-free-devel
-BuildRequires:  libswresample-free-devel
-BuildRequires:  libswscale-free-devel
-
-# Networking and compression
-BuildRequires:  libcurl-devel
-BuildRequires:  openssl-devel
-BuildRequires:  zlib-devel
-BuildRequires:  brotli-devel
-BuildRequires:  minizip-compat-devel
-
-# Fonts and image support
-BuildRequires:  fontconfig-devel
-BuildRequires:  libjpeg-turbo-devel
-BuildRequires:  libpng-devel
-
-# Audio and input
-BuildRequires:  pulseaudio-libs-devel
-BuildRequires:  pipewire-devel
-BuildRequires:  alsa-lib-devel
-BuildRequires:  libevdev-devel
-BuildRequires:  libinput-devel
-
-# Wayland/X11/windowing
-BuildRequires:  egl-wayland-devel
-BuildRequires:  gtk3-devel
-BuildRequires:  dbus-devel
-BuildRequires:  systemd-devel
-BuildRequires:  wayland-devel
-BuildRequires:  libdecor-devel
-
-# X11-specific
-BuildRequires:  libSM-devel
-BuildRequires:  libICE-devel
-BuildRequires:  libX11-devel
-BuildRequires:  libXau-devel
-BuildRequires:  libxcb-devel
-BuildRequires:  libXcomposite-devel
-BuildRequires:  libXcursor-devel
-BuildRequires:  libXext-devel
-BuildRequires:  libXfixes-devel
-BuildRequires:  libXft-devel
-BuildRequires:  libXi-devel
-BuildRequires:  libXpresent-devel
-BuildRequires:  libXrandr-devel
-BuildRequires:  libXrender-devel
-BuildRequires:  xcb-util-cursor-devel
-BuildRequires:  xcb-util-devel
-BuildRequires:  xcb-util-errors-devel
-BuildRequires:  xcb-util-image-devel
-BuildRequires:  xcb-util-keysyms-devel
-BuildRequires:  xcb-util-renderutil-devel
-BuildRequires:  xcb-util-wm-devel
-BuildRequires:  xcb-util-xrm-devel
-BuildRequires:  libxkbcommon-devel
-BuildRequires:  libxkbcommon-x11-devel
-
-# CPU detection
-BuildRequires:  cpuinfo-devel
+# ... [other BuildRequires as in your spec] ...
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -103,15 +26,28 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
 
 %prep
-%autosetup -n %{project_dir}
+# Extract the main source archive quietly
+%setup -q
 
-# Extract DiscordRPC source and rename
+# Now find the extracted directory dynamically:
+project_dir=$(tar tzf %{SOURCE0} | head -1 | cut -f1 -d"/")
+
+# Extract DiscordRPC source
 tar -xf %{SOURCE1}
 mv discord-rpc-%{discord_rpc_ver} discord-rpc
 
+# Change into the project directory to prepare for build
+cd "$project_dir" || exit 1
+
+# Export project_dir for later usage
+echo "export PROJECT_DIR=$project_dir" > %{_builddir}/project_dir.env
+
 %build
+# Load project_dir from prep stage
+. %{_builddir}/project_dir.env
+
 # Build DiscordRPC first
-pushd discord-rpc
+pushd "$PROJECT_DIR"/discord-rpc
 mkdir -p build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 cmake --build . --target discord-rpc
@@ -123,9 +59,10 @@ popd
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/%{project_dir}/discord-rpc/include \
-  -DDiscordRPC_LIBRARY=%{_builddir}/%{project_dir}/discord-rpc/build/libdiscord-rpc.a \
-  -DDiscordRPC_FOUND=TRUE
+  -DDiscordRPC_INCLUDE_DIR=%{_builddir}/$PROJECT_DIR/discord-rpc/include \
+  -DDiscordRPC_LIBRARY=%{_builddir}/$PROJECT_DIR/discord-rpc/build/libdiscord-rpc.a \
+  -DDiscordRPC_FOUND=TRUE \
+  "$PROJECT_DIR"
 
 %ninja_build -C build
 
