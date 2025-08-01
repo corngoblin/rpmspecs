@@ -74,6 +74,7 @@ BuildRequires:  xcb-util-keysyms-devel
 BuildRequires:  xcb-util-renderutil-devel
 BuildRequires:  xcb-util-wm-devel
 BuildRequires:  xcb-util-xrm-devel
+BuildRequires:  cpuinfo-devel
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -110,3 +111,4 @@ install -Dm644 %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstatio
 * Thu Jul 31 2025 Monkegold <o53cbexp0@mozmail.com> - 0.1.9226-1
 - Included SDL3 devel packages to satisfy find_package(SDL3)
 - Removed qt6‑qtx11extras-devel (unavailable in Fedora 42)
+- Added cpuinfo-devel to satisfy upstream hardware detection
