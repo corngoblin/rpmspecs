@@ -1,6 +1,6 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        1%{?dist}
+Release:        3%{?dist}
 Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
@@ -20,6 +20,7 @@ BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 BuildRequires:  extra-cmake-modules
+BuildRequires:  shaderc-devel
 
 # Core deps
 BuildRequires:  SDL3-devel
@@ -108,18 +109,17 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long-term maintainability.
 
 %prep
-# 1) Unpack DuckStation (creates duckstation-0.1-9226/)
 %setup -q -n duckstation-%{upstream_tag}
 
-# 2) Vendor in Discord-RPC (strip its top folder)
+# Vendor in Discord-RPC
 mkdir -p discord-rpc
 tar -xzf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
-# 3) Inject custom CMakeModules
+# Inject custom CMakeModules
 mkdir -p CMakeModules
 
-# 3a) FindDiscordRPC.cmake
+# FindDiscordRPC.cmake
 cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
 find_path(DiscordRPC_INCLUDE_DIR discord_rpc.h
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/include
@@ -136,7 +136,7 @@ endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
 
-# 3b) Findlibzip.cmake
+# Findlibzip.cmake
 cat > CMakeModules/Findlibzip.cmake << 'EOF'
 find_path(libzip_INCLUDE_DIR zip.h
   PATHS /usr/include
@@ -153,7 +153,7 @@ endif()
 mark_as_advanced(libzip_INCLUDE_DIR libzip_LIBRARY)
 EOF
 
-# 3c) FindSoundTouch.cmake
+# FindSoundTouch.cmake
 cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
 find_path(SoundTouch_INCLUDE_DIR SoundTouch.h
   PATHS /usr/include
@@ -171,7 +171,7 @@ mark_as_advanced(SoundTouch_INCLUDE_DIR SoundTouch_LIBRARY)
 EOF
 
 %build
-# 1) Build vendored static Discord-RPC
+# Build vendored Discord-RPC
 pushd discord-rpc
 mkdir build && cd build
 cmake .. \
@@ -181,23 +181,23 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# 2) Configure DuckStation, pointing at our CMake modules and ECM
+# Configure DuckStation
 %cmake -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
   -DCMAKE_MODULE_PATH=$PWD/CMakeModules \
-  -DECM_DIR=/usr/lib64/cmake/ECM
+  -DECM_DIR=/usr/lib64/cmake/ECM \
+  -DShaderc_DIR=/usr/lib64/cmake/shaderc
 
-# 3) Build
+# Build
 ninja -C build
 
 %install
-# Stage into buildroot
 ninja -C build install DESTDIR=%{buildroot}
 
-# Desktop file & icon (ignore upstream re-install errors)
+# Desktop file & icon
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
 
@@ -213,9 +213,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug 1 2025 Monkegold <you@example.com> - 0.1.9226-1
-- Added extra-cmake-modules BuildRequires
-- Injected Findlibzip.cmake, FindSoundTouch.cmake, FindDiscordRPC.cmake
-- Vendored & built Discord-RPC static in-tree
-- Passed -DECM_DIR to %cmake for ECM detection
-- Retained dash-free RPM Version; actual tag in %{upstream_tag}
+* Fri Aug 1 2025 Monkegold <you@example.com> — 0.1.9226-3
+- Added shaderc-devel BuildRequires  
+- Passed -DShaderc_DIR to %cmake for Shaderc detection  
+- Bumped Release to 3  
