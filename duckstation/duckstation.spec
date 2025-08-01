@@ -2,6 +2,7 @@ Name:           duckstation
 Version:        0.1.9226
 Release:        6%{?dist}
 Summary:        Fast PlayStation 1 emulator
+
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
@@ -20,9 +21,13 @@ BuildRequires:  extra-cmake-modules
 BuildRequires:  gcc-c++
 BuildRequires:  git
 BuildRequires:  ninja-build
+BuildRequires:  pkgconfig
 
-# system Shaderc – provides /usr/include/shaderc and shaderc.pc
+# system Shaderc – headers, .so symlink, shaderc.pc
 BuildRequires:  libshaderc-devel
+
+# spirv_cross C shared – headers, .so, pkg-config
+BuildRequires:  libspirv-cross-c-shared-devel
 
 # Core deps
 BuildRequires:  SDL3-devel
@@ -113,15 +118,15 @@ DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, pla
 %prep
 %autosetup -n duckstation-%{upstream_tag} -p1
 
-# Vendor in Discord-RPC
+# Vendor Discord-RPC
 mkdir -p discord-rpc
 tar xf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
-# Prepare custom CMake find-modules
+# Prepare our custom CMake find-modules
 mkdir -p CMakeModules
 
-# FindDiscordRPC.cmake (unchanged)
+# FindDiscordRPC.cmake
 cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
 find_path(DiscordRPC_INCLUDE_DIR discord_rpc.h
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/include
@@ -131,9 +136,9 @@ find_library(DiscordRPC_LIBRARY
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/build
 )
 if (DiscordRPC_INCLUDE_DIR AND DiscordRPC_LIBRARY)
-  set(DiscordRPC_FOUND TRUE)
+  set(DiscordRPC_FOUND      TRUE)
   set(DiscordRPC_INCLUDE_DIRS ${DiscordRPC_INCLUDE_DIR})
-  set(DiscordRPC_LIBRARIES ${DiscordRPC_LIBRARY})
+  set(DiscordRPC_LIBRARIES   ${DiscordRPC_LIBRARY})
 endif()
 mark_as_advanced(DiscordRPC_INCLUDE_DIR DiscordRPC_LIBRARY)
 EOF
@@ -148,9 +153,9 @@ find_library(libzip_LIBRARY
   PATHS %{_libdir}
 )
 if (libzip_INCLUDE_DIR AND libzip_LIBRARY)
-  set(libzip_FOUND TRUE)
+  set(libzip_FOUND       TRUE)
   set(libzip_INCLUDE_DIRS ${libzip_INCLUDE_DIR})
-  set(libzip_LIBRARIES  ${libzip_LIBRARY})
+  set(libzip_LIBRARIES   ${libzip_LIBRARY})
 endif()
 mark_as_advanced(libzip_INCLUDE_DIR libzip_LIBRARY)
 EOF
@@ -165,26 +170,35 @@ find_library(SoundTouch_LIBRARY
   PATHS %{_libdir}
 )
 if (SoundTouch_INCLUDE_DIR AND SoundTouch_LIBRARY)
-  set(SoundTouch_FOUND TRUE)
+  set(SoundTouch_FOUND       TRUE)
   set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDE_DIR})
-  set(SoundTouch_LIBRARIES  ${SoundTouch_LIBRARY})
+  set(SoundTouch_LIBRARIES   ${SoundTouch_LIBRARY})
 endif()
 mark_as_advanced(SoundTouch_INCLUDE_DIR SoundTouch_LIBRARY)
 EOF
 
-# FindShaderc.cmake (wraps pkg-config)
+# FindShaderc.cmake
 cat > CMakeModules/FindShaderc.cmake << 'EOF'
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Shaderc REQUIRED shaderc)
-if(Shaderc_FOUND)
-  set(Shaderc_INCLUDE_DIRS ${Shaderc_INCLUDEDIR})
-  set(Shaderc_LIBRARIES   ${Shaderc_LIBRARIES})
-endif()
+set(Shaderc_FOUND        TRUE)
+set(Shaderc_INCLUDE_DIRS ${Shaderc_INCLUDEDIR})
+set(Shaderc_LIBRARIES   ${Shaderc_LIBRARIES})
 mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
 EOF
 
+# Findspirv_cross_c_shared.cmake
+cat > CMakeModules/Findspirv_cross_c_shared.cmake << 'EOF'
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(spirv_cross_c_shared REQUIRED spirv-cross-c-shared)
+set(spirv_cross_c_shared_FOUND        TRUE)
+set(spirv_cross_c_shared_INCLUDE_DIRS ${spirv_cross_c_shared_INCLUDEDIR})
+set(spirv_cross_c_shared_LIBRARIES    ${spirv_cross_c_shared_LIBRARIES})
+mark_as_advanced(spirv_cross_c_shared_INCLUDE_DIRS spirv_cross_c_shared_LIBRARIES)
+EOF
+
 %build
-# Build Discord-RPC
+# Build vendored Discord-RPC
 pushd discord-rpc
 mkdir build && cd build
 cmake .. \
@@ -209,10 +223,9 @@ ninja -C build
 %install
 ninja -C build install DESTDIR=%{buildroot}
 
-# Install desktop file & icon
+# desktop file & icon
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
-
 install -Dm644 \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
   %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
@@ -226,6 +239,7 @@ install -Dm644 \
 
 %changelog
 * Fri Aug  1 2025 You <you@example.com> — 0.1.9226-6
-- Removed vendored Shaderc clone & build  
-- Switched to system libshaderc-devel  
-- Added FindShaderc.cmake (pkg-config based)  
+- Removed vendored Shaderc clone & build
+- Switched to system libshaderc-devel
+- Added FindShaderc.cmake (pkg-config-based)
+- Added libspirv-cross-c-shared-devel & Findspirv_cross_c_shared.cmake
