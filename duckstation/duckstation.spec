@@ -12,7 +12,6 @@ URL:            https://github.com/stenzek/duckstation
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9226.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
-Patch0:         duckstation-disable-discordrpc-findpackage.patch
 
 BuildRequires:  cmake
 BuildRequires:  ninja-build
@@ -103,7 +102,7 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long‑term maintainability.
 
 %prep
-%autosetup -n duckstation-0.1-9226 -p1
+%autosetup -n duckstation-0.1-9226
 
 mkdir -p discord-rpc
 tar -xzf %{_sourcedir}/%{discord_rpc_file} -C discord-rpc --strip-components=1
