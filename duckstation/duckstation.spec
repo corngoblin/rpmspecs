@@ -6,11 +6,11 @@ Summary:        Fast PlayStation 1 emulator
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
-# pinned Discord-RPC commit for reproducibility
+# pinned Discord-RPC commit for reproducible builds
 %global discord_rpc_ver   cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 %global discord_rpc_file  %{discord_rpc_ver}.tar.gz
 
-# the real upstream tag (contains a dash)
+# real upstream tag (contains a dash)
 %global upstream_tag      0.1-9226
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
@@ -20,7 +20,7 @@ BuildRequires:  cmake
 BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 
-# Core dependencies
+# Core deps
 BuildRequires:  SDL3-devel
 BuildRequires:  SDL3_image-devel
 BuildRequires:  SDL3_ttf-devel
@@ -50,7 +50,7 @@ BuildRequires:  zlib-devel
 BuildRequires:  brotli-devel
 BuildRequires:  minizip-compat-devel
 
-# Fonts and image support
+# Fonts and images
 BuildRequires:  fontconfig-devel
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  libpng-devel
@@ -105,15 +105,58 @@ ExclusiveArch:  x86_64 aarch64
 DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long-term maintainability.
 
 %prep
-# Unpack the main tarball (folder is duckstation-0.1-9226)
+# Unpack the main tarball (creates duckstation-0.1-9226/)
 %setup -q -n duckstation-%{upstream_tag}
 
-# Embed and unpack Discord-RPC into ./discord-rpc
+# Manually extract Discord-RPC into discord-rpc/, stripping its top-level dir
 mkdir -p discord-rpc
-pushd discord-rpc
-%setup -q -T -D -a 1
-popd
+tar -xzf %{_sourcedir}/%{discord_rpc_file} \
+    --strip-components=1 -C discord-rpc
 
 %build
-# Build & install static Discord-RPC
-pushd discord
+# Build static Discord-RPC in-place
+pushd discord-rpc
+mkdir build && cd build
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+cmake --build . --target discord-rpc
+popd
+
+# Configure and build DuckStation with embedded Discord-RPC
+%cmake -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DUSE_QT6=ON \
+  -DDUCKSTATION_QT_UI=ON \
+  -DDISCORDRPC_SUPPORT=ON \
+  -DDiscordRPC_INCLUDE_DIR=$PWD/discord-rpc/include \
+  -DDiscordRPC_LIBRARY=$PWD/discord-rpc/build/libdiscord-rpc.a \
+  -DDiscordRPC_FOUND=TRUE
+
+ninja -C build
+
+%install
+# Stage everything into %{buildroot}
+ninja -C build install DESTDIR=%{buildroot}
+
+# Install desktop file & icon (ignore errors if already present)
+desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
+  %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
+
+install -Dm644 \
+  %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png \
+  %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
+
+%files
+%license LICENSE
+%doc README.md
+%{_bindir}/duckstation-qt
+%{_datadir}/applications/org.duckstation.DuckStation.desktop
+%{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
+
+%changelog
+* Thu Jul 31 2025 Monkegold <o533333cbexp0@mozmail.com> - 0.1.9226-1
+- Replaced second %setup with a manual tar extract to preserve upstream directory name
+- Fixed %prep cd errors for discord-rpc
+- Left RPM Version dash-free; upstream_tag holds the real 0.1-9226
