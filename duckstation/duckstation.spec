@@ -1,8 +1,7 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Fast PlayStation 1 emulator
-
 License:        CC-BY-NC-ND-4.0
 URL:            https://github.com/stenzek/duckstation
 
@@ -10,20 +9,20 @@ URL:            https://github.com/stenzek/duckstation
 %global discord_rpc_ver   cc59d26d1d628fbd6527aac0ac1d6301f4978b92
 %global discord_rpc_file  %{discord_rpc_ver}.tar.gz
 
-# pin Shaderc tag
-%global shaderc_tag       v2025.3
-
 # real upstream tag (contains a dash)
 %global upstream_tag      0.1-9226
 
 Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
 Source1:        https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
 
-BuildRequires:  git
 BuildRequires:  cmake
-BuildRequires:  ninja-build
-BuildRequires:  gcc-c++
 BuildRequires:  extra-cmake-modules
+BuildRequires:  gcc-c++
+BuildRequires:  git
+BuildRequires:  ninja-build
+
+# system Shaderc – provides /usr/include/shaderc and shaderc.pc
+BuildRequires:  libshaderc-devel
 
 # Core deps
 BuildRequires:  SDL3-devel
@@ -55,7 +54,7 @@ BuildRequires:  zlib-devel
 BuildRequires:  brotli-devel
 BuildRequires:  minizip-compat-devel
 
-# Fonts & image support
+# Fonts & images
 BuildRequires:  fontconfig-devel
 BuildRequires:  libjpeg-turbo-devel
 BuildRequires:  libpng-devel
@@ -119,16 +118,10 @@ mkdir -p discord-rpc
 tar xf %{_sourcedir}/%{discord_rpc_file} \
     --strip-components=1 -C discord-rpc
 
-# Clone exact Shaderc release
-git clone --branch %{shaderc_tag} --depth 1 https://github.com/google/shaderc.git shaderc
-pushd shaderc
-./utils/git-sync-deps
-popd
-
-# Inject custom CMakeModules for 3rd-party finds
+# Prepare custom CMake find-modules
 mkdir -p CMakeModules
 
-# FindDiscordRPC.cmake
+# FindDiscordRPC.cmake (unchanged)
 cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
 find_path(DiscordRPC_INCLUDE_DIR discord_rpc.h
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/include
@@ -179,8 +172,19 @@ endif()
 mark_as_advanced(SoundTouch_INCLUDE_DIR SoundTouch_LIBRARY)
 EOF
 
+# FindShaderc.cmake (wraps pkg-config)
+cat > CMakeModules/FindShaderc.cmake << 'EOF'
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(Shaderc REQUIRED shaderc)
+if(Shaderc_FOUND)
+  set(Shaderc_INCLUDE_DIRS ${Shaderc_INCLUDEDIR})
+  set(Shaderc_LIBRARIES   ${Shaderc_LIBRARIES})
+endif()
+mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
+EOF
+
 %build
-# Build vendored Discord-RPC
+# Build Discord-RPC
 pushd discord-rpc
 mkdir build && cd build
 cmake .. \
@@ -190,33 +194,22 @@ cmake .. \
 cmake --build . --target discord-rpc
 popd
 
-# Build vendored Shaderc v2025.3
-pushd shaderc
-mkdir build && cd build
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBUILD_SHARED_LIBS=OFF \
-  -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-cmake --build .
-popd
-
-# Configure DuckStation to use our vendored Shaderc
-%cmake -B build -G Ninja \
+# Configure DuckStation
+%cmake -S . -B build \
+  -G Ninja \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DUSE_QT6=ON \
   -DDUCKSTATION_QT_UI=ON \
   -DDISCORDRPC_SUPPORT=ON \
-  -DCMAKE_MODULE_PATH=$PWD/CMakeModules \
-  -DECM_DIR=%{_libdir}/cmake/ECM \
-  -DShaderc_INCLUDE_DIR=$PWD/shaderc/include \
-  -DShaderc_LIBRARY=$PWD/shaderc/build/libshaderc_combined.a
+  -DCMAKE_MODULE_PATH=%{_sourcedir}/CMakeModules \
+  -DECM_DIR=%{_libdir}/cmake/ECM
 
 ninja -C build
 
 %install
 ninja -C build install DESTDIR=%{buildroot}
 
-# Desktop file & icon
+# Install desktop file & icon
 desktop-file-install --dir=%{buildroot}%{_datadir}/applications \
   %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop 2>/dev/null || :
 
@@ -232,8 +225,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Fri Aug 1 2025 Monkegold <you@example.com> — 0.1.9226-5
-- Switched Shaderc to tag v2025.3 from GitHub  
-- Removed system libshaderc-devel requirement  
-- Cloned and built Shaderc v2025.3 in %prep/%build steps  
-- Pointed CMake at vendored shaderc headers & static library  
+* Fri Aug  1 2025 You <you@example.com> — 0.1.9226-6
+- Removed vendored Shaderc clone & build  
+- Switched to system libshaderc-devel  
+- Added FindShaderc.cmake (pkg-config based)  
