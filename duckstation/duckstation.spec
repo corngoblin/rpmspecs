@@ -131,6 +131,16 @@ pkg_check_modules(Shaderc REQUIRED shaderc)
 set(Shaderc_FOUND        TRUE)
 set(Shaderc_INCLUDE_DIRS ${Shaderc_INCLUDEDIR})
 set(Shaderc_LIBRARIES    ${Shaderc_LIBRARIES})
+
+# Create imported CMake target for the shared library
+get_filename_component(_shlib_dir ${Shaderc_LIBRARIES} PATH)
+set(_shlib "${_shlib_dir}/libshaderc_shared.so")
+add_library(Shaderc::shaderc_shared UNKNOWN IMPORTED GLOBAL)
+set_target_properties(Shaderc::shaderc_shared PROPERTIES
+  IMPORTED_LOCATION "${_shlib}"
+  INTERFACE_INCLUDE_DIRECTORIES "${Shaderc_INCLUDEDIR}"
+)
+
 mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
 EOF
 
@@ -179,5 +189,6 @@ install -Dm644 \
 
 %changelog
 * Fri Aug  1 2025 You <you@example.com> — 0.1.9226-7
-- Added FindShaderc.cmake and pointed CMAKE_MODULE_PATH at CMakeModules  
-- Switched SPIRV-Cross flag to `-DSPIRV_CROSS_C_API=ON` and removed bad target  
+- Added imported CMake target `Shaderc::shaderc_shared` in FindShaderc.cmake  
+- Switched SPIRV-Cross vendor flag to `-DSPIRV_CROSS_C_API=ON`  
+- Removed build of nonexistent SPIRV-Cross C-shared target  
