@@ -1,6 +1,6 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        9%{?dist}
+Release:        10%{?dist}
 Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
@@ -210,15 +210,20 @@ EOF
 
 # 5) FindSoundTouch.cmake
 # FIX: The project expects an imported target, but the system package does not provide one.
-# We create it manually here.
+# We create it manually here, ensuring the correct library path is used.
 cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
 find_package(PkgConfig QUIET)
 pkg_check_modules(SoundTouch QUIET soundtouch)
 
 if (SoundTouch_FOUND)
-  add_library(SoundTouch::SoundTouchDLL STATIC IMPORTED)
+  find_library(SOUNDTOUCH_LIBRARY
+    NAMES SoundTouch
+    HINTS ${SoundTouch_LIBRARY_DIRS}
+    NO_DEFAULT_PATH
+  )
+  add_library(SoundTouch::SoundTouchDLL SHARED IMPORTED)
   set_target_properties(SoundTouch::SoundTouchDLL PROPERTIES
-    IMPORTED_LOCATION "${SoundTouch_LIBRARY_DIRS}/${SoundTouch_LIBRARIES}"
+    IMPORTED_LOCATION "${SOUNDTOUCH_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
   )
   set(SoundTouch_FOUND TRUE)
@@ -288,8 +293,7 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Sat Aug 2 2025 You <you@example.com> - 0.1.9226-9
-- Fixed CMake errors by creating custom Find modules for libbacktrace and SoundTouch.
-- The project was failing because it expected specific imported target names that
-- were not provided by the default build environment or our vendoring process.
-- This change explicitly creates those targets to allow the build to proceed.
+* Sat Aug 2 2025 You <you@example.com> - 0.1.9226-10
+- Corrected the custom FindSoundTouch.cmake module to use the full library file path.
+- The previous version was using an incorrect name, which caused the build to fail.
+- This change should fix the final linking error and allow the build to complete.
