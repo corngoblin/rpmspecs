@@ -1,11 +1,3 @@
-My apologies for the oversight. You are right, for Fedora Copr builds from a single spec file, using a separate patch file is not a viable option. The entire build process must be contained within the spec file itself. The build error you're now seeing is also a direct result of this: error: line 116: Unknown tag: %description. This is a classic syntax error that can happen when an RPM spec file is not correctly formatted, often due to a stray character or misplaced line.
-
-The fix I suggested previously to add a patch file is not compatible with your build system. Instead of creating a separate patch file, we can use a sed command within the %prep section of the spec file to apply the same change directly to the src/util/CMakeLists.txt file.
-
-Here is the fully corrected spec file, with the patch logic incorporated using sed and the syntax error on %description resolved. I've re-examined the line numbering and content to ensure the fix is applied correctly.
-
-Corrected Spec File
-
  Name:          duckstation
  Version:       0.1.9226
  Release:       10%{?dist}
