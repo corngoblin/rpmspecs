@@ -107,8 +107,6 @@ BuildRequires:  libxkbcommon-x11-devel
 # CPU features & extras
 BuildRequires:  cpuinfo-devel
 BuildRequires:  libzip-devel
-# No soundtouch-devel to prevent CMake from finding the system library and
-# instead use the vendored one.
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -214,9 +212,8 @@ mark_as_advanced(Libbacktrace_INCLUDE_DIRS Libbacktrace_LIBRARIES)
 EOF
 
 # 5) FindSoundTouch.cmake
-# FIX: The project expects an imported target, but the system package does not provide one.
-# We create it manually here, ensuring the correct library path is used.
-# This replaces the empty module which was causing the build failure.
+# FIX: The project's build system expects targets named "SoundTouch" and "SoundTouch::SoundTouchDLL".
+# This module finds the system library and creates both as a shared imported library and an alias.
 cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SoundTouch REQUIRED soundtouch)
@@ -225,11 +222,13 @@ set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDEDIR})
 set(SoundTouch_LIBRARIES ${SoundTouch_LIBRARIES})
 
 if (SoundTouch_FOUND)
-    add_library(SoundTouch::SoundTouchDLL SHARED IMPORTED GLOBAL)
-    set_target_properties(SoundTouch::SoundTouchDLL PROPERTIES
-      IMPORTED_LOCATION "${SoundTouch_LIBRARIES}"
-      INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
+    add_library(SoundTouch_IMPORTED SHARED IMPORTED GLOBAL)
+    set_target_properties(SoundTouch_IMPORTED PROPERTIES
+        IMPORTED_LOCATION "${SoundTouch_LIBRARIES}"
+        INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
     )
+    add_library(SoundTouch::SoundTouchDLL ALIAS SoundTouch_IMPORTED)
+    add_library(SoundTouch ALIAS SoundTouch_IMPORTED)
 endif()
 mark_as_advanced(SoundTouch_INCLUDE_DIRS SoundTouch_LIBRARIES)
 EOF
@@ -272,7 +271,8 @@ popd
     -DCMAKE_MODULE_PATH=CMakeModules \
     -DECM_DIR=%{_libdir}/cmake/ECM \
     -Dspirv_cross_c_shared_INCLUDE_DIR=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/include \
-    -Dspirv_cross_c_shared_LIBRARY=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/build-spirv/libspirv-cross-c.a
+    -Dspirv_cross_c_shared_LIBRARY=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/build-spirv/libspirv-cross-c.a \
+    -DDUCKSTATION_SOUNDTOUCH_BUNDLED=OFF
 
 ninja -C build
 
