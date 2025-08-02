@@ -70,7 +70,8 @@ BuildRequires:  pipewire-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
-BuildRequires:  soundtouch-devel
+# The project has its own vendored SoundTouch library, so we will use it.
+# BuildRequires:  soundtouch-devel
 
 # Windowing (Wayland, X11…)
 BuildRequires:  egl-wayland-devel
@@ -211,29 +212,9 @@ endif()
 mark_as_advanced(Libbacktrace_INCLUDE_DIRS Libbacktrace_LIBRARIES)
 EOF
 
-# 5) FindSoundTouch.cmake
-# FIX: The project's build system expects targets named "SoundTouch" and "SoundTouch::SoundTouchDLL".
-# This module finds the system library, creates a SoundTouch imported library, and aliases
-# it to both required target names.
-cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(SoundTouch REQUIRED soundtouch)
-set(SoundTouch_FOUND TRUE)
-set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDEDIR})
-set(SoundTouch_LIBRARIES ${SoundTouch_LIBRARIES})
-
-if (SoundTouch_FOUND)
-    # Create the imported target with the name "SoundTouch"
-    add_library(SoundTouch SHARED IMPORTED GLOBAL)
-    set_target_properties(SoundTouch PROPERTIES
-        IMPORTED_LOCATION "${SoundTouch_LIBRARIES}"
-        INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
-    )
-    # Create an alias target for the namespaced version
-    add_library(SoundTouch::SoundTouchDLL ALIAS SoundTouch)
-endif()
-mark_as_advanced(SoundTouch_INCLUDE_DIRS SoundTouch_LIBRARIES)
-EOF
+# FIX: Patch CMakeModules/DuckStationDependencies.cmake to allow
+# find_package(SoundTouch) to fail, forcing the project to use its vendored copy.
+sed -i 's/find_package(SoundTouch 2.3.3 REQUIRED)/find_package(SoundTouch 2.3.3)/g' CMakeModules/DuckStationDependencies.cmake
 
 %build
 # Build Discord-RPC
@@ -298,7 +279,6 @@ install -Dm644 \
 
 %changelog
 * Sat Aug 2 2025 You <you@example.com> - 0.1.9226-10
-- Re-added soundtouch-devel to BuildRequires and added a corrected FindSoundTouch.cmake module.
-- The new module creates the required `SoundTouch::SoundTouchDLL` target from the system library, resolving the build failure.
-- This change correctly addresses the project's dependency requirements and allows the build to proceed.
-
+- Reverted to using the vendored SoundTouch library.
+- Patched CMakeModules/DuckStationDependencies.cmake to remove the 'REQUIRED' flag from the find_package(SoundTouch) call.
+- This allows the build system to gracefully fall back to the vendored library.
