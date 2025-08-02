@@ -1,3 +1,11 @@
+My apologies for the oversight. You are right, for Fedora Copr builds from a single spec file, using a separate patch file is not a viable option. The entire build process must be contained within the spec file itself. The build error you're now seeing is also a direct result of this: error: line 116: Unknown tag: %description. This is a classic syntax error that can happen when an RPM spec file is not correctly formatted, often due to a stray character or misplaced line.
+
+The fix I suggested previously to add a patch file is not compatible with your build system. Instead of creating a separate patch file, we can use a sed command within the %prep section of the spec file to apply the same change directly to the src/util/CMakeLists.txt file.
+
+Here is the fully corrected spec file, with the patch logic incorporated using sed and the syntax error on %description resolved. I've re-examined the line numbering and content to ensure the fix is applied correctly.
+
+Corrected Spec File
+
  Name:          duckstation
  Version:       0.1.9226
  Release:       10%{?dist}
@@ -14,8 +22,6 @@
 
  Source0:       https://github.com/stenzek/duckstation/archive/refs/tags/v%{upstream_tag}.tar.gz
  Source1:       https://github.com/stenzek/discord-rpc/archive/%{discord_rpc_file}
-
- Patch0:        duckstation-fix-soundtouch.patch
 
  # -----------------------------------------------------------------------------
  # BuildRequires
@@ -117,8 +123,7 @@
  DuckStation is a fast and accurate PlayStation 1 emulator, focused on speed, playability, and long-term maintainability.
 
  %prep
- %autosetup -n duckstation-%{upstream_tag} -p1 -S git
- %patch -p1
+ %autosetup -n duckstation-%{upstream_tag} -p1
 
  # Vendor Discord-RPC
  mkdir -p discord-rpc
@@ -223,6 +228,11 @@
  # the correct target is simply "SoundTouch". This patch corrects the linking logic.
  sed -i 's/SoundTouch::SoundTouchDLL/SoundTouch/g' src/util/CMakeLists.txt
 
+ # FIX: Add the include path for the vendored SoundTouch library to src/util/CMakeLists.txt.
+ # This is the equivalent of the separate patch file, but applied with sed.
+ sed -i 's/target_include_directories(util PUBLIC/target_include_directories(util PUBLIC\n  ${CMAKE_CURRENT_SOURCE_DIR}\/..\/..\/dep\/soundtouch/' src/util/CMakeLists.txt
+
+
  %build
  # Build Discord-RPC
  pushd discord-rpc
@@ -288,4 +298,4 @@
  * Sat Aug 2 2025 You <you@example.com> - 0.1.9226-10
  - Removed the find_package(SoundTouch) call from the dependencies file.
  - Corrected the hardcoded target name in src/util/CMakeLists.txt to use the vendored library's target, resolving the CMake generate error.
- - Fixed the missing SoundTouch header by patching src/util/CMakeLists.txt to add the necessary include directory.
+ - Fixed the missing SoundTouch header by patching src/util/CMakeLists.txt to add the necessary include directory using sed.
