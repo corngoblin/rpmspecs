@@ -70,9 +70,8 @@ BuildRequires:  pipewire-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
-# The project has its own vendored SoundTouch library, but its build logic is flawed.
-# We will use the system library and provide the necessary targets ourselves.
-BuildRequires:  soundtouch-devel
+# We now rely exclusively on the project's vendored SoundTouch library.
+# BuildRequires:  soundtouch-devel
 
 # Windowing (Wayland, X11…)
 BuildRequires:  egl-wayland-devel
@@ -213,28 +212,9 @@ endif()
 mark_as_advanced(Libbacktrace_INCLUDE_DIRS Libbacktrace_LIBRARIES)
 EOF
 
-# 5) FindSoundTouch.cmake
-# FIX: The project's build system expects targets named "SoundTouch" and "SoundTouch::SoundTouchDLL".
-# This module finds the system library and creates both of these targets to satisfy the build system.
-cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(SoundTouch REQUIRED soundtouch)
-set(SoundTouch_FOUND TRUE)
-set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDEDIR})
-set(SoundTouch_LIBRARIES ${SoundTouch_LIBRARIES})
-
-if (SoundTouch_FOUND)
-    # Create the imported target with the name "SoundTouch"
-    add_library(SoundTouch SHARED IMPORTED GLOBAL)
-    set_target_properties(SoundTouch PROPERTIES
-        IMPORTED_LOCATION "${SoundTouch_LIBRARIES}"
-        INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
-    )
-    # Create an alias target for the namespaced version
-    add_library(SoundTouch::SoundTouchDLL ALIAS SoundTouch)
-endif()
-mark_as_advanced(SoundTouch_INCLUDE_DIRS SoundTouch_LIBRARIES)
-EOF
+# FIX: Remove the find_package(SoundTouch) call entirely. This forces the project to use its
+# own vendored library and avoids the build conflicts with the system library.
+sed -i '/find_package(SoundTouch/d' CMakeModules/DuckStationDependencies.cmake
 
 %build
 # Build Discord-RPC
@@ -299,6 +279,5 @@ install -Dm644 \
 
 %changelog
 * Sat Aug 2 2025 You <you@example.com> - 0.1.9226-10
-- Reverted the SoundTouch fix to use the system library.
-- Corrected the FindSoundTouch.cmake module to provide both `SoundTouch` and `SoundTouch::SoundTouchDLL` targets, resolving the latest CMake error.
-
+- Removed the find_package(SoundTouch) call from the dependencies file.
+- This forces the project to build and link against its vendored SoundTouch library, resolving all previous build conflicts.
