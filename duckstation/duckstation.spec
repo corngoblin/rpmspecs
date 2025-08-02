@@ -212,9 +212,13 @@ endif()
 mark_as_advanced(Libbacktrace_INCLUDE_DIRS Libbacktrace_LIBRARIES)
 EOF
 
-# FIX: Remove the find_package(SoundTouch) call entirely. This forces the project to use its
-# own vendored library and avoids the build conflicts with the system library.
+# FIX: Remove the find_package(SoundTouch) call entirely, forcing the project to use its vendored library.
 sed -i '/find_package(SoundTouch/d' CMakeModules/DuckStationDependencies.cmake
+
+# FIX: The project hardcodes the `SoundTouch::SoundTouchDLL` target in src/util/CMakeLists.txt,
+# which is only created if find_package succeeds. When using the vendored library,
+# the correct target is simply "SoundTouch". This patch corrects the linking logic.
+sed -i 's/SoundTouch::SoundTouchDLL/SoundTouch/g' src/util/CMakeLists.txt
 
 %build
 # Build Discord-RPC
@@ -280,4 +284,4 @@ install -Dm644 \
 %changelog
 * Sat Aug 2 2025 You <you@example.com> - 0.1.9226-10
 - Removed the find_package(SoundTouch) call from the dependencies file.
-- This forces the project to build and link against its vendored SoundTouch library, resolving all previous build conflicts.
+- Corrected the hardcoded target name in src/util/CMakeLists.txt to use the vendored library's target, resolving the CMake generate error.
