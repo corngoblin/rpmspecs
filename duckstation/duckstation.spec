@@ -70,6 +70,7 @@ BuildRequires:  pipewire-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  libevdev-devel
 BuildRequires:  libinput-devel
+BuildRequires:  soundtouch-devel
 
 # Windowing (Wayland, X11…)
 BuildRequires:  egl-wayland-devel
@@ -182,9 +183,9 @@ EOF
 cat > CMakeModules/FindShaderc.cmake << 'EOF'
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Shaderc REQUIRED shaderc)
-set(Shaderc_FOUND         TRUE)
-set(Shaderc_INCLUDE_DIRS  ${Shaderc_INCLUDEDIR})
-set(Shaderc_LIBRARIES     ${Shaderc_LIBRARIES})
+set(Shaderc_FOUND          TRUE)
+set(Shaderc_INCLUDE_DIRS   ${Shaderc_INCLUDEDIR})
+set(Shaderc_LIBRARIES      ${Shaderc_LIBRARIES})
 
 get_filename_component(_shlib_dir ${Shaderc_LIBRARIES} PATH)
 set(_shlib "${_shlib_dir}/libshaderc_shared.so")
@@ -214,17 +215,24 @@ EOF
 
 # 5) FindSoundTouch.cmake
 # FIX: The project expects an imported target, but the system package does not provide one.
-# We create it manually here, ensuring the correct library path is used. This also
-# prevents the build from looking for a system-installed version.
+# We create it manually here, ensuring the correct library path is used.
+# This replaces the empty module which was causing the build failure.
 cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
-# This module is intentionally left empty. The project's build system
-# will automatically fall back to using the vendored SoundTouch library
-# when find_package(SoundTouch) fails.
-EOF
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SoundTouch REQUIRED soundtouch)
+set(SoundTouch_FOUND TRUE)
+set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDEDIR})
+set(SoundTouch_LIBRARIES ${SoundTouch_LIBRARIES})
 
-# Patch the CMake file to force the use of the vendored SoundTouch library.
-# We remove the line that attempts to find a system-installed SoundTouch.
-sed -i '/find_package(SoundTouch/d' CMakeLists.txt
+if (SoundTouch_FOUND)
+    add_library(SoundTouch::SoundTouchDLL SHARED IMPORTED GLOBAL)
+    set_target_properties(SoundTouch::SoundTouchDLL PROPERTIES
+      IMPORTED_LOCATION "${SoundTouch_LIBRARIES}"
+      INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
+    )
+endif()
+mark_as_advanced(SoundTouch_INCLUDE_DIRS SoundTouch_LIBRARIES)
+EOF
 
 %build
 # Build Discord-RPC
