@@ -106,6 +106,7 @@ BuildRequires:  libxkbcommon-x11-devel
 # CPU features & extras
 BuildRequires:  cpuinfo-devel
 BuildRequires:  libzip-devel
+# The soundtouch-devel package is still needed for other dependencies
 BuildRequires:  soundtouch-devel
 
 ExclusiveArch:  x86_64 aarch64
@@ -208,29 +209,6 @@ endif()
 mark_as_advanced(Libbacktrace_INCLUDE_DIRS Libbacktrace_LIBRARIES)
 EOF
 
-# 5) FindSoundTouch.cmake
-# FIX: The project expects an imported target, but the system package does not provide one.
-# We create it manually here, ensuring the correct library path is used.
-cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
-find_package(PkgConfig QUIET)
-pkg_check_modules(SoundTouch QUIET soundtouch)
-
-if (SoundTouch_FOUND)
-  find_library(SOUNDTOUCH_LIBRARY
-    NAMES SoundTouch
-    HINTS ${SoundTouch_LIBRARY_DIRS}
-    NO_DEFAULT_PATH
-  )
-  add_library(SoundTouch::SoundTouchDLL SHARED IMPORTED)
-  set_target_properties(SoundTouch::SoundTouchDLL PROPERTIES
-    IMPORTED_LOCATION "${SOUNDTOUCH_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
-  )
-  set(SoundTouch_FOUND TRUE)
-endif()
-mark_as_advanced(SoundTouch_INCLUDE_DIRS SoundTouch_LIBRARIES)
-EOF
-
 %build
 # Build Discord-RPC
 pushd discord-rpc
@@ -268,6 +246,7 @@ popd
     -DDISCORDRPC_SUPPORT=ON \
     -DCMAKE_MODULE_PATH=CMakeModules \
     -DECM_DIR=%{_libdir}/cmake/ECM \
+    -DDUCKSTATION_USE_SYSTEM_SOUNDTOUCH=OFF \
     -Dspirv_cross_c_shared_INCLUDE_DIR=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/include \
     -Dspirv_cross_c_shared_LIBRARY=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/build-spirv/libspirv-cross-c.a
 
@@ -294,6 +273,7 @@ install -Dm644 \
 
 %changelog
 * Sat Aug 2 2025 You <you@example.com> - 0.1.9226-10
-- Corrected the custom FindSoundTouch.cmake module to use the full library file path.
-- The previous version was using an incorrect name, which caused the build to fail.
-- This change should fix the final linking error and allow the build to complete.
+- Corrected build by disabling the use of the system's soundtouch library.
+- The build will now use the vendored soundtouch dependency, which includes the necessary headers.
+- This change resolves the 'soundtouch/SoundTouchDLL.h: No such file or directory' error.
+- Removed the custom FindSoundTouch.cmake module as it is no longer needed.
