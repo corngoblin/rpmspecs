@@ -106,7 +106,8 @@ BuildRequires:  libxkbcommon-x11-devel
 # CPU features & extras
 BuildRequires:  cpuinfo-devel
 BuildRequires:  libzip-devel
-BuildRequires:  soundtouch-devel
+# No soundtouch-devel to prevent CMake from finding the system library and
+# instead use the vendored one.
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -133,6 +134,7 @@ git clone --depth=1 \
 mkdir -p CMakeModules
 
 # 1) FindDiscordRPC.cmake
+# FIX: Find and use the vendored discord-rpc library.
 cat > CMakeModules/FindDiscordRPC.cmake << 'EOF'
 find_path(DiscordRPC_INCLUDE_DIR discord_rpc.h
   PATHS ${CMAKE_SOURCE_DIR}/discord-rpc/include
@@ -175,6 +177,8 @@ mark_as_advanced(spirv_cross_c_shared_INCLUDE_DIR spirv_cross_c_shared_LIBRARY)
 EOF
 
 # 3) FindShaderc.cmake
+# FIX: The project expects an imported target, but the system package does not provide one.
+# We create it manually here, ensuring the correct library path is used.
 cat > CMakeModules/FindShaderc.cmake << 'EOF'
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(Shaderc REQUIRED shaderc)
@@ -210,19 +214,17 @@ EOF
 
 # 5) FindSoundTouch.cmake
 # FIX: The project expects an imported target, but the system package does not provide one.
-# We create it manually here, ensuring the correct library path is used.
+# We create it manually here, ensuring the correct library path is used. This also
+# prevents the build from looking for a system-installed version.
 cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
-find_package(PkgConfig QUIET)
-pkg_check_modules(SoundTouch QUIET soundtouch)
-
-if (SoundTouch_FOUND)
-  add_library(SoundTouch::SoundTouchDLL SHARED IMPORTED)
-  set_target_properties(SoundTouch::SoundTouchDLL PROPERTIES
-    IMPORTED_LOCATION "${SoundTouch_LIBRARIES}"
-    INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
-  )
-endif()
+# This module is intentionally left empty. The project's build system
+# will automatically fall back to using the vendored SoundTouch library
+# when find_package(SoundTouch) fails.
 EOF
+
+# Patch the CMake file to force the use of the vendored SoundTouch library.
+# We remove the line that attempts to find a system-installed SoundTouch.
+sed -i '/find_package(SoundTouch/d' CMakeLists.txt
 
 %build
 # Build Discord-RPC
