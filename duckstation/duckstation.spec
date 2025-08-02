@@ -1,6 +1,6 @@
 Name:           duckstation
 Version:        0.1.9226
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        Fast PlayStation 1 emulator
 
 License:        CC-BY-NC-ND-4.0
@@ -40,8 +40,6 @@ BuildRequires:  qt6-qttools-devel
 BuildRequires:  qt6-qtsvg-devel
 BuildRequires:  qt6-qtmultimedia-devel
 BuildRequires:  qt6-qtshadertools-devel
-BuildRequires:  qt6-qtwayland-devel
-BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  qt6-qt5compat-devel
 
 # Multimedia & graphics
@@ -195,23 +193,37 @@ mark_as_advanced(Shaderc_INCLUDE_DIRS Shaderc_LIBRARIES)
 EOF
 
 # 4) FindLibbacktrace.cmake
-# FIX: Since libbacktrace is not in the repo, we vendor it and define a custom
-# find module to point to the vendored location.
+# FIX: Define the required imported target for the vendored library.
 cat > CMakeModules/FindLibbacktrace.cmake << 'EOF'
-find_path(LIBBACKTRACE_INCLUDE_DIR
-  NAMES backtrace.h
-  PATHS ${CMAKE_SOURCE_DIR}/backtrace/install/include
-)
-find_library(LIBBACKTRACE_LIBRARY
-  NAMES backtrace
-  PATHS ${CMAKE_SOURCE_DIR}/backtrace/install/lib
-)
-if(LIBBACKTRACE_INCLUDE_DIR AND LIBBACKTRACE_LIBRARY)
+set(Libbacktrace_INCLUDE_DIRS %{_builddir}/duckstation-%{upstream_tag}/backtrace/install/include)
+set(Libbacktrace_LIBRARIES %{_builddir}/duckstation-%{upstream_tag}/backtrace/install/lib/libbacktrace.a)
+if (EXISTS "${Libbacktrace_INCLUDE_DIRS}" AND EXISTS "${Libbacktrace_LIBRARIES}")
   set(Libbacktrace_FOUND TRUE)
-  set(Libbacktrace_LIBRARIES ${LIBBACKTRACE_LIBRARY})
-  set(Libbacktrace_INCLUDE_DIRS ${LIBBACKTRACE_INCLUDE_DIR})
+  add_library(libbacktrace::libbacktrace STATIC IMPORTED)
+  set_target_properties(libbacktrace::libbacktrace PROPERTIES
+    IMPORTED_LOCATION "${Libbacktrace_LIBRARIES}"
+    INTERFACE_INCLUDE_DIRECTORIES "${Libbacktrace_INCLUDE_DIRS}"
+  )
 endif()
-mark_as_advanced(LIBBACKTRACE_INCLUDE_DIR LIBBACKTRACE_LIBRARY)
+mark_as_advanced(Libbacktrace_INCLUDE_DIRS Libbacktrace_LIBRARIES)
+EOF
+
+# 5) FindSoundTouch.cmake
+# FIX: The project expects an imported target, but the system package does not provide one.
+# We create it manually here.
+cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
+find_package(PkgConfig QUIET)
+pkg_check_modules(SoundTouch QUIET soundtouch)
+
+if (SoundTouch_FOUND)
+  add_library(SoundTouch::SoundTouchDLL STATIC IMPORTED)
+  set_target_properties(SoundTouch::SoundTouchDLL PROPERTIES
+    IMPORTED_LOCATION "${SoundTouch_LIBRARY_DIRS}/${SoundTouch_LIBRARIES}"
+    INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
+  )
+  set(SoundTouch_FOUND TRUE)
+endif()
+mark_as_advanced(SoundTouch_INCLUDE_DIRS SoundTouch_LIBRARIES)
 EOF
 
 %build
@@ -276,7 +288,8 @@ install -Dm644 \
 %{_datadir}/icons/hicolor/128x128/apps/org.duckstation.DuckStation.png
 
 %changelog
-* Sat Aug 2 2025 You <you@example.com> - 0.1.9226-8
-- Fixed build failure by correctly vendoring libbacktrace from its Git repository.
-- The previous attempt failed because the source tarball URL was invalid.
-- This new approach is more robust and should allow the build to proceed.
+* Sat Aug 2 2025 You <you@example.com> - 0.1.9226-9
+- Fixed CMake errors by creating custom Find modules for libbacktrace and SoundTouch.
+- The project was failing because it expected specific imported target names that
+- were not provided by the default build environment or our vendoring process.
+- This change explicitly creates those targets to allow the build to proceed.
