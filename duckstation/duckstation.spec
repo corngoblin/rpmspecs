@@ -213,7 +213,8 @@ EOF
 
 # 5) FindSoundTouch.cmake
 # FIX: The project's build system expects targets named "SoundTouch" and "SoundTouch::SoundTouchDLL".
-# This module finds the system library and creates both as a shared imported library and an alias.
+# This module finds the system library, creates a SoundTouch imported library, and aliases
+# it to both required target names.
 cat > CMakeModules/FindSoundTouch.cmake << 'EOF'
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SoundTouch REQUIRED soundtouch)
@@ -222,13 +223,14 @@ set(SoundTouch_INCLUDE_DIRS ${SoundTouch_INCLUDEDIR})
 set(SoundTouch_LIBRARIES ${SoundTouch_LIBRARIES})
 
 if (SoundTouch_FOUND)
-    add_library(SoundTouch_IMPORTED SHARED IMPORTED GLOBAL)
-    set_target_properties(SoundTouch_IMPORTED PROPERTIES
+    # Create the imported target with the name "SoundTouch"
+    add_library(SoundTouch SHARED IMPORTED GLOBAL)
+    set_target_properties(SoundTouch PROPERTIES
         IMPORTED_LOCATION "${SoundTouch_LIBRARIES}"
         INTERFACE_INCLUDE_DIRECTORIES "${SoundTouch_INCLUDE_DIRS}"
     )
-    add_library(SoundTouch::SoundTouchDLL ALIAS SoundTouch_IMPORTED)
-    add_library(SoundTouch ALIAS SoundTouch_IMPORTED)
+    # Create an alias target for the namespaced version
+    add_library(SoundTouch::SoundTouchDLL ALIAS SoundTouch)
 endif()
 mark_as_advanced(SoundTouch_INCLUDE_DIRS SoundTouch_LIBRARIES)
 EOF
@@ -271,8 +273,7 @@ popd
     -DCMAKE_MODULE_PATH=CMakeModules \
     -DECM_DIR=%{_libdir}/cmake/ECM \
     -Dspirv_cross_c_shared_INCLUDE_DIR=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/include \
-    -Dspirv_cross_c_shared_LIBRARY=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/build-spirv/libspirv-cross-c.a \
-    -DDUCKSTATION_SOUNDTOUCH_BUNDLED=OFF
+    -Dspirv_cross_c_shared_LIBRARY=%{_builddir}/duckstation-%{upstream_tag}/spirv-cross/build-spirv/libspirv-cross-c.a
 
 ninja -C build
 
@@ -300,3 +301,4 @@ install -Dm644 \
 - Re-added soundtouch-devel to BuildRequires and added a corrected FindSoundTouch.cmake module.
 - The new module creates the required `SoundTouch::SoundTouchDLL` target from the system library, resolving the build failure.
 - This change correctly addresses the project's dependency requirements and allows the build to proceed.
+
