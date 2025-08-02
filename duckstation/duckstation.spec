@@ -107,7 +107,7 @@ BuildRequires:  libxkbcommon-x11-devel
 BuildRequires:  cpuinfo-devel
 BuildRequires:  libzip-devel
 # The soundtouch-devel package is still needed for other dependencies
-BuildRequires:  soundtouch-devel
+# but will not be used for the build of duckstation to fix the `SoundTouch::SoundTouchDLL` error.
 
 ExclusiveArch:  x86_64 aarch64
 
