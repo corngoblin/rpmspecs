@@ -1,21 +1,18 @@
-%%global forgeurl https://github.com/ZDoom/gzdoom
-
-# Let forge macros fetch latest release tag and set %{forgeversion} automatically
-%forgemeta
-
 Name:           gzdoom
-Version:        %{forgeversion}
+Version:        4.14.2
 Release:        1%{?dist}
 Summary:        An OpenGL DOOM source port with graphic and modding extensions
 License:        GPLv3
 Url:            http://zdoom.org
-Source0:        %{forgesource}
+Source0:        https://github.com/ZDoom/gzdoom/archive/g4.14.2.tar.gz
 Source1:        gzdoom.desktop
 
 Provides:       zdoom = 2.8.1
 Provides:       qzdoom = 1.3.0
 Provides:       bundled(re2c) = 0.16.0
 Provides:       bundled(gdtoa)
+#Provides:       bundled(lzma-sdk) = 17.01
+#Provides:       bundled(dumb) = 0.9.3
 
 Patch1:         %{name}-waddir.patch
 Patch2:         %{name}-asmjit.patch
@@ -31,6 +28,10 @@ BuildRequires:  nasm
 BuildRequires:  glew-devel
 BuildRequires:  pkgconfig(libwebp)
 
+# Todo: Patch
+#BuildRequires:  glslang-devel
+
+# pkgconfig
 BuildRequires:  pkgconfig(flac)
 BuildRequires:  pkgconfig(bzip2)
 BuildRequires:  pkgconfig(zlib)
@@ -56,6 +57,7 @@ Requires:       openal-soft
 Requires:       fluidsynth
 Requires:       SDL2
 
+# ZMusic Requirement
 BuildRequires:  zmusic-devel
 Requires:       zmusic
 
@@ -66,13 +68,35 @@ ZDoom is a family of enhanced ports (modifications) of the Doom engine for
 running on modern operating systems. It runs on Windows, Linux, and OS X, and
 adds new features not found in the games as originally published by id Software.
 
+ZDoom features the following that is not found in the original Doom:
+
+  * Runs on all modern versions of Windows, Mac, and Linux distributions
+  * Can play all Doom engine games, including Ultimate Doom, Doom II, Heretic,
+    Hexen, Strife, and more
+  * Supports all editing features of Hexen
+  * Supports most of the Boom editing features
+  * Supports new features such as colored lighting, 3D floors, and much more
+  * All Doom limits are gone
+  * Several softsynths for MUS and MIDI playback, including OPL softsynth for an
+    authentitc "oldschool" flavor
+  * High resolutions
+  * Quake-style console and key bindings
+  * Crosshairs
+  * Free look
+  * Jumping, crouching, swimming, and flying
+  * Up to 8 player network games using UDP/IP, including team-based gameplay
+  * Support for the Bloodbath announcer from the classic Monolith game Blood
+  * Walk over/under monsters and other things
+
+GZDoom provides an OpenGL renderer and HQnX rescaling.
+
 %prep
-%forgeautosetup -p1
+%setup -q -n %{name}-g4.14.2
 %patch -P 1 -P 2 -P 3 -p1
 
 perl -i -pe 's{__DATE__}{""}g' \
         src/common/platform/posix/sdl/i_main.cpp
-perl -i -pe 's{<unknown version>}{%version}g' \
+perl -i -pe 's{<unknown version>}{%{version}}g' \
         tools/updaterevision/UpdateRevision.cmake
 
 %build
@@ -95,18 +119,23 @@ make %{?_smp_mflags} -C builddir
 %install
 rm -rf $RPM_BUILD_ROOT
 
+# Install gzdoom
 %make_install -C builddir
 
-%{__mkdir} -p ${RPM_BUILD_ROOT}%{_datadir}/applications
+%{__mkdir} -p %{buildroot}%{_datadir}/applications
 %{__install} -m 0644 %{SOURCE1} \
-  ${RPM_BUILD_ROOT}%{_datadir}/applications/gzdoom.desktop
+  %{buildroot}%{_datadir}/applications/gzdoom.desktop
 
-%{__mkdir} -p ${RPM_BUILD_ROOT}%{_datadir}/icons/hicolor/256x256/apps
-cp %{_builddir}/%{name}-%{forgeversion}/src/posix/zdoom.xpm \
-  ${RPM_BUILD_ROOT}%{_datadir}/icons/hicolor/256x256/apps/gzdoom.xpm
+# Don't know why but the XPM isn't put anywhere
+%{__mkdir} -p %{buildroot}%{_datadir}/icons/hicolor/256x256/apps
+cp %{_builddir}/%{name}-g4.14.2/src/posix/zdoom.xpm \
+  %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/gzdoom.xpm
 
-pushd ${RPM_BUILD_ROOT}%{_datadir}/doom
-    %{__ln_s} %{_datadir}/games/doom/soundfounts soundfonts
+# Fallback soundfont - Symlinking instead of copying
+# as a test for now. It's not clear if the binary will look here
+# or look in /usr/share/games/doom yet.
+pushd %{buildroot}%{_datadir}/doom
+    %{__ln_s} %{_datadir}/games/doom/soundfonts soundfonts
     %{__ln_s} %{_datadir}/games/doom/fm_banks fm_banks
 popd
 
@@ -124,5 +153,5 @@ echo "INFO: %{name}: The global IWAD directory is %{_datadir}/doom."
 %{_datadir}/games/doom/*
 
 %changelog
-* Mon Aug 11 2025 corngoblin <wookie@cookies.com> - %{forgeversion}-1
-- Auto-detect latest GitHub release for COPR
+* Mon Aug 11 2025 corngoblin <wookie@cookies.com> - 4.14.2-1
+- Updated to upstream version 4.14.2 (tag g4.14.2)
