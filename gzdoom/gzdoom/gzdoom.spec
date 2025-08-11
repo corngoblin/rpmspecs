@@ -1,10 +1,16 @@
+# Global settings
+%global major_version 4
+%global minor_version 14
+%global micro_version 2
+#define debug_package %{nil}
+
 Name:           gzdoom
-Version:        4.14.2
+Version:        %{major_version}.%{minor_version}.%{micro_version}
 Release:        1%{?dist}
 Summary:        An OpenGL DOOM source port with graphic and modding extensions
 License:        GPLv3
 Url:            http://zdoom.org
-Source0:        https://github.com/ZDoom/gzdoom/archive/g4.14.2.tar.gz
+Source0:        https://github.com/coelckers/gzdoom/archive/g%{version}.tar.gz
 Source1:        gzdoom.desktop
 
 Provides:       zdoom = 2.8.1
@@ -16,7 +22,6 @@ Provides:       bundled(gdtoa)
 
 Patch1:         %{name}-waddir.patch
 Patch2:         %{name}-asmjit.patch
-Patch3:         %{name}-fix-gcc15.patch
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  gcc-c++
@@ -91,12 +96,12 @@ ZDoom features the following that is not found in the original Doom:
 GZDoom provides an OpenGL renderer and HQnX rescaling.
 
 %prep
-%setup -q -n %{name}-g4.14.2
+%setup -q -n %{name}-g%{version}
 %patch -P 1 -P 2 -P 3 -p1
 
 perl -i -pe 's{__DATE__}{""}g' \
         src/common/platform/posix/sdl/i_main.cpp
-perl -i -pe 's{<unknown version>}{%{version}}g' \
+perl -i -pe 's{<unknown version>}{%version}g' \
         tools/updaterevision/UpdateRevision.cmake
 
 %build
@@ -114,6 +119,7 @@ export _rhel_flags="-fPIC"
         -DINSTALL_PK3_PATH="%{_datadir}/doom" \
         -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
+#make_build -C builddir
 make %{?_smp_mflags} -C builddir
 
 %install
@@ -122,20 +128,20 @@ rm -rf $RPM_BUILD_ROOT
 # Install gzdoom
 %make_install -C builddir
 
-%{__mkdir} -p %{buildroot}%{_datadir}/applications
+%{__mkdir} -p ${RPM_BUILD_ROOT}%{_datadir}/applications
 %{__install} -m 0644 %{SOURCE1} \
-  %{buildroot}%{_datadir}/applications/gzdoom.desktop
+  ${RPM_BUILD_ROOT}%{_datadir}/applications/gzdoom.desktop
 
 # Don't know why but the XPM isn't put anywhere
-%{__mkdir} -p %{buildroot}%{_datadir}/icons/hicolor/256x256/apps
-cp %{_builddir}/%{name}-g4.14.2/src/posix/zdoom.xpm \
-  %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/gzdoom.xpm
+%{__mkdir} -p ${RPM_BUILD_ROOT}%{_datadir}/icons/hicolor/256x256/apps
+cp %{_builddir}/%{name}-g%{version}/src/posix/zdoom.xpm \
+  ${RPM_BUILD_ROOT}%{_datadir}/icons/hicolor/256x256/apps/gzdoom.xpm
 
 # Fallback soundfont - Symlinking instead of copying
 # as a test for now. It's not clear if the binary will look here
 # or look in /usr/share/games/doom yet.
-pushd %{buildroot}%{_datadir}/doom
-    %{__ln_s} %{_datadir}/games/doom/soundfonts soundfonts
+pushd ${RPM_BUILD_ROOT}%{_datadir}/doom
+    %{__ln_s} %{_datadir}/games/doom/soundfounts soundfonts
     %{__ln_s} %{_datadir}/games/doom/fm_banks fm_banks
 popd
 
@@ -153,5 +159,5 @@ echo "INFO: %{name}: The global IWAD directory is %{_datadir}/doom."
 %{_datadir}/games/doom/*
 
 %changelog
-* Mon Aug 11 2025 corngoblin <wookie@cookies.com> - 4.14.2-1
-- Updated to upstream version 4.14.2 (tag g4.14.2)
+* Sun May 04 2025 Louis Abel <tucklesepk@gmail.com> - 4.14.2-1
+- Rebase to 4.14.2
