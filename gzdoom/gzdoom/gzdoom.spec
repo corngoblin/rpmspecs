@@ -1,8 +1,7 @@
-%global forgeurl https://github.com/ZDoom/gzdoom
-# Let COPR auto-detect latest version from GitHub tags
-%forgemeta
+%%global forgeurl https://github.com/ZDoom/gzdoom
 
-#define debug_package %{nil}
+# Let forge macros fetch latest release tag and set %{forgeversion} automatically
+%forgemeta
 
 Name:           gzdoom
 Version:        %{forgeversion}
