@@ -5,7 +5,7 @@
 %global github_repo Sunshine
 
 
-%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
+%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
 
 # Use the release tag as the official version
 Version: %{release_tag}
