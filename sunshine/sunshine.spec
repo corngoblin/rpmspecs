@@ -162,11 +162,12 @@ function install_cuda() {
     find "%{cuda_dir}" -name math_functions.h -exec cat {} \;
 
     # Apply the patch
+    # The patch path needs to be updated to the correct build directory.
     patch -p2 \
       --backup \
       --directory="%{cuda_dir}" \
       --verbose \
-      < "%{_builddir}/Sunshine/packaging/linux/fedora/patches/f42/${architecture}/01-math_functions.patch"
+      < "packaging/linux/fedora/patches/f42/${architecture}/01-math_functions.patch"
   fi
 }
 
@@ -185,7 +186,7 @@ export BUILD_VERSION=v%{build_version}
 export COMMIT=%{commit}
 
 # cmake
-cd %{_builddir}/Sunshine
+cd %{_builddir}/Sunshine-%{build_version}
 echo "cmake args:"
 echo "${cmake_args[@]}"
 cmake "${cmake_args[@]}"
