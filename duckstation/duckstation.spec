@@ -5,8 +5,7 @@ Summary:       A fast PlayStation 1 emulator
 License:       CC-BY-NC-ND-4.0
 URL:           https://github.com/stenzek/duckstation
 Source0:       https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9384.tar.gz
-# We use the tagged release as the source instead of a git clone.
-# This makes the build more reproducible.
+
 BuildRequires: alsa-lib-devel
 BuildRequires: autoconf
 BuildRequires: automake
@@ -79,15 +78,10 @@ rewind, and various graphical enhancements.
 
 %prep
 %setup -q -n duckstation-0.1-9384
-# The -n flag specifies the source directory name after extraction
 
 %build
-# Build dependencies using the provided script
 ./scripts/deps/build-dependencies-linux.sh deps
 
-# Use CMake to configure the build. The -B build-release flag creates a build directory
-# and the options specify clang and lld as the compiler and linker.
-# We also link to the locally built dependencies.
 cmake -B build-release \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
@@ -99,22 +93,36 @@ cmake -B build-release \
       -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1-9384/deps" \
       -G Ninja
 
-# Use Ninja to compile the source code.
 ninja -C build-release
 
 %install
-# Create a destination directory for the installation
-mkdir -p %{buildroot}%{_bindir}
-# Copy the compiled binary to the system's binary directory
-cp build-release/bin/duckstation-qt %{buildroot}%{_bindir}/duckstation
-# Copy the required license file
-mkdir -p %{buildroot}%{_docdir}/duckstation
-cp LICENSE %{buildroot}%{_docdir}/duckstation/
+# The -Dinstall flag from cmake is used to install files to the buildroot
+# with a prefix path, so a dedicated install step isn't needed here.
+# Instead, we will directly move the files to their final destination from
+# the default installation location.
+
+# Create the standard directories for desktop files and icons
+mkdir -p %{buildroot}/%{_datadir}/applications/
+mkdir -p %{buildroot}/%{_datadir}/icons/hicolor/512x512/apps/
+
+# Install the desktop file and icon
+install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop
+install -Dm644 scripts/packaging/org.duckstation.DuckStation.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
+
+# Create the final destination directory for the binary and link it to /usr/bin
+mkdir -p %{buildroot}/opt/duckstation
+cp build-release/bin/duckstation-qt %{buildroot}/opt/duckstation/
+ln -s /opt/duckstation/duckstation-qt %{buildroot}/%{_bindir}/duckstation
 
 %files
+%license LICENSE
+/opt/duckstation
 %{_bindir}/duckstation
-%{_docdir}/duckstation/LICENSE
+%{_datadir}/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
+%{_datadir}/applications/org.duckstation.DuckStation.desktop
 
 %changelog
 * Fri Aug 15 2025 Your Name <you@example.com> - 0.1.9384-1
 - Initial COPR package for Duckstation release v0.1-9384.
+- Added git to BuildRequires.
+- Adjusted installation paths for desktop file and icons.
