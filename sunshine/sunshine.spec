@@ -1,20 +1,22 @@
 %global build_timestamp %(date +"%Y%m%d")
 
-# Define the GitHub repository owner and name
-%global github_owner LizardByte
-%global github_repo Sunshine
+# use sed to replace these values
+%global build_version 2025.628.4510
+%global branch master
+%global commit 65f14e1003f831e776c170621bd06d8292f65155
+
+%undefine _hardened_build
 
 Name: Sunshine
-# Set a placeholder version that will be updated later.
-Version: 0.1
-Release: %{build_timestamp}%{?dist}
+Version: %{build_version}
+Release: 1%{?dist}
 Summary: Self-hosted game stream host for Moonlight.
 License: GPLv3-only
 URL: https://github.com/LizardByte/Sunshine
+Source0: tarball.tar.gz
 
-# Add jq as a build dependency so it's available when we need it.
-BuildRequires: jq
 BuildRequires: appstream
+# BuildRequires: boost-devel >= 1.86.0
 BuildRequires: cmake >= 3.25.0
 BuildRequires: desktop-file-utils
 BuildRequires: libappstream-glib
@@ -54,18 +56,18 @@ BuildRequires: which
 BuildRequires: xorg-x11-server-Xvfb
 
 # Conditional BuildRequires for cuda-gcc based on Fedora version
-%if 0%{?fedora} <= 41
+%if 0%{?fedora} >= 40 && 0%{?fedora} <= 41
 BuildRequires: gcc13
 BuildRequires: gcc13-c++
 %global gcc_version 13
-%global cuda_version 12.9.1
-%global cuda_build 575.57.08
+%global cuda_version 12.6.3
+%global cuda_build 560.35.05
 %elif %{?fedora} >= 42
 BuildRequires: gcc14
 BuildRequires: gcc14-c++
 %global gcc_version 14
-%global cuda_version 12.9.1
-%global cuda_build 575.57.08
+%global cuda_version 12.8.1
+%global cuda_build 570.124.06
 %endif
 
 %global cuda_dir %{_builddir}/cuda
@@ -88,30 +90,18 @@ Requires: libayatana-appindicator3 >= 0.5.3
 Self-hosted game stream host for Moonlight.
 
 %prep
-set -e
+# extract tarball to current directory
+mkdir -p %{_builddir}/Sunshine
+tar -xzf %{SOURCE0} -C %{_builddir}/Sunshine
 
-# Fetch the latest release tag from GitHub.
-release_tag=$(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
-if [ -z "$release_tag" ]; then
-    echo "Error: Could not retrieve latest release tag." >&2
-    exit 1
-fi
-echo "Latest release tag: $release_tag"
+# list directory
+ls -a %{_builddir}/Sunshine
 
-# The COPR build system automatically clones the Git repository.
-# We will use the cloned source to create a tarball with the correct directory name.
-# First, change to the directory where the source code is cloned.
-cd ..
-mv rpmspecs/sunshine Sunshine
-cd Sunshine
-# Now create a tarball of the checked-out source.
-git archive --format=tar.gz --prefix=%{name}-$release_tag/ $release_tag > ../%{name}-$release_tag.tar.gz
-
-# Use the rpmbuild macro to unpack the newly created tarball.
-# This ensures a clean and correctly named source directory for the build.
-%setup -q -n %{name}-$release_tag
+# patches
+%autopatch -p1
 
 %build
+# exit on error
 set -e
 
 # Detect the architecture and Fedora version
@@ -121,7 +111,7 @@ cuda_supported_architectures=("x86_64" "aarch64")
 
 # prepare CMAKE args
 cmake_args=(
-  "-B=build"
+  "-B=%{_builddir}/Sunshine/build"
   "-G=Unix Makefiles"
   "-S=."
   "-DBUILD_DOCS=OFF"
@@ -184,7 +174,7 @@ function install_cuda() {
       --backup \
       --directory="%{cuda_dir}" \
       --verbose \
-      < "%{_builddir}/Sunshine/packaging/linux/patches/${architecture}/01-math_functions.patch"
+      < "%{_builddir}/Sunshine/packaging/linux/fedora/patches/f42/${architecture}/01-math_functions.patch"
   fi
 }
 
@@ -198,13 +188,16 @@ else
 fi
 
 # setup the version
-export BUILD_VERSION=v%{release_tag}
+export BRANCH=%{branch}
+export BUILD_VERSION=v%{build_version}
+export COMMIT=%{commit}
 
 # cmake
+cd %{_builddir}/Sunshine
 echo "cmake args:"
 echo "${cmake_args[@]}"
 cmake "${cmake_args[@]}"
-make -j$(nproc) -C "build"
+make -j$(nproc) -C "%{_builddir}/Sunshine/build"
 
 %check
 # validate the metainfo file
@@ -213,11 +206,11 @@ appstream-util validate %{buildroot}%{_metainfodir}/*.metainfo.xml
 desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 
 # run tests
-cd build
+cd %{_builddir}/Sunshine/build
 xvfb-run ./tests/test_sunshine
 
 %install
-cd build
+cd %{_builddir}/Sunshine/build
 %make_install
 
 # Add modules-load configuration
@@ -280,4 +273,3 @@ rm -f /usr/lib/modules-load.d/uhid.conf
 %{_datadir}/sunshine/**
 
 %changelog
-* Fri Aug 15 2025 Monkeygold 
