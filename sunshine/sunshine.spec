@@ -4,7 +4,6 @@
 %global github_owner LizardByte
 %global github_repo Sunshine
 
-BuildRequires: jq
 
 %global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
 
