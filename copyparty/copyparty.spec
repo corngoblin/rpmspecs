@@ -36,8 +36,7 @@ mkdir -p %{buildroot}/usr/local/bin
 
 # The built file is located in the dist/ directory
 # Let's verify it exists and then move it.
-install -m 0755 dist/copyparty-sfx.py %{buildroot}/usr/local/bin/copyparty-sfx.py
-
+install -m 0755 copyparty-sfx.py %{buildroot}/usr/local/bin/copyparty-sfx.py
 %files
 /usr/local/bin/copyparty-sfx.py
 
