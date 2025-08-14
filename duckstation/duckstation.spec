@@ -18,6 +18,7 @@ BuildRequires: egl-wayland-devel
 BuildRequires: extra-cmake-modules
 BuildRequires: fontconfig-devel
 BuildRequires: gcc-c++
+BuildRequires: git
 BuildRequires: gtk3-devel
 BuildRequires: libavcodec-free-devel
 BuildRequires: libavformat-free-devel
