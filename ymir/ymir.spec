@@ -86,13 +86,15 @@ mv %{buildroot}%{_bindir}/ymir-sdl3 %{buildroot}%{_bindir}/ymir
 # Install the desktop file
 install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.desktop %{buildroot}%{_datadir}/applications/io.github.strikerx3.ymir.desktop
 
-# Install the icon file with the generic name "ymir.svg" so the desktop file can find it
-install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/ymir.svg
+# Install the icon file with the generic name "ymir.png" so the desktop file can find it
+install -Dm0644 apps/ymir-sdl3/res/ymir.png %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
 %files
 %doc
 %{_bindir}/ymir
 %{_datadir}/applications/io.github.strikerx3.ymir.desktop
-%{_datadir}/icons/hicolor/scalable/apps/ymir.svg
+%{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
 %changelog
+* Fri Aug 15 2025 Your Name <youremail@example.com> - 0.1.7-1
+- Initial COPR release.
