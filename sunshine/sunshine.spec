@@ -4,21 +4,16 @@
 %global github_owner LizardByte
 %global github_repo Sunshine
 
-BuildRequires: jq
-
-%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
-
-# Use the release tag as the official version
-Version: %{release_tag}
-
-# The source URL is now a dynamic link to the latest release tarball
-Source0: https://github.com/%{github_owner}/%{github_repo}/archive/%{release_tag}.tar.gz
-Name: Sunshine
-Release: 1%{?dist}
+Name: sunshine
+Version: 0.1
+Release: %{autorelease}
 Summary: Self-hosted game stream host for Moonlight.
 License: GPLv3-only
 URL: https://github.com/LizardByte/Sunshine
 
+# rpkg-macros provides the %autorelease macro and other useful tools.
+BuildRequires: rpkg-macros
+# Removed jq, as it's no longer needed for this approach.
 
 %undefine _hardened_build
 
@@ -272,4 +267,4 @@ rm -f /usr/lib/modules-load.d/uhid.conf
 %{_datadir}/sunshine/**
 
 %changelog
-* Fri Aug 15 2025 Monkeygold - 0.1.9384-1
+* Fri Aug 15 2025 Monkeygold
