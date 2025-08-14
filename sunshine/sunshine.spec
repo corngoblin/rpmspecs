@@ -13,7 +13,7 @@ Release: 1%{?dist}
 Summary: Self-hosted game stream host for Moonlight.
 License: GPLv3-only
 URL: https://github.com/LizardByte/Sunshine
-Source0: tarball.tar.gz
+Source0: https://github.com/LizardByte/Sunshine/archive/refs/tags/v%{build_version}.tar.gz
 
 BuildRequires: appstream
 # BuildRequires: boost-devel >= 1.86.0
@@ -90,15 +90,7 @@ Requires: libayatana-appindicator3 >= 0.5.3
 Self-hosted game stream host for Moonlight.
 
 %prep
-# extract tarball to current directory
-mkdir -p %{_builddir}/Sunshine
-tar -xzf %{SOURCE0} -C %{_builddir}/Sunshine
-
-# list directory
-ls -a %{_builddir}/Sunshine
-
-# patches
-%autopatch -p1
+%autosetup -n Sunshine-%{build_version}
 
 %build
 # exit on error
