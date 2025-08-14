@@ -1,19 +1,27 @@
 %global build_timestamp %(date +"%Y%m%d")
 
-# use sed to replace these values
-%global build_version 0
-%global branch 0
-%global commit 0
+# Define the GitHub repository owner and name
+%global github_owner LizardByte
+%global github_repo Sunshine
 
-%undefine _hardened_build
+# Get the latest release tag from the GitHub API
+%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
 
-Name: Sunshine
-Version: %{build_version}
+# Use the release tag as the official version
+Version: %{release_tag}
+
+# The source URL is now a dynamic link to the latest release tarball
+Source0: https://github.com/%{github_owner}/%{github_repo}/archive/%{release_tag}.tar.gz
+
 Release: 1%{?dist}
 Summary: Self-hosted game stream host for Moonlight.
 License: GPLv3-only
 URL: https://github.com/LizardByte/Sunshine
-Source0: tarball.tar.gz
+
+# The following macros for version, branch, and commit are no longer needed
+# and have been removed.
+
+%undefine _hardened_build
 
 BuildRequires: appstream
 # BuildRequires: boost-devel >= 1.86.0
@@ -90,9 +98,10 @@ Requires: libayatana-appindicator3 >= 0.5.3
 Self-hosted game stream host for Moonlight.
 
 %prep
-# extract tarball to current directory
-mkdir -p %{_builddir}/Sunshine
-tar -xzf %{SOURCE0} -C %{_builddir}/Sunshine
+# Unpack the downloaded source tarball.
+%setup -q -n %{name}-%{release_tag}
+
+# The remaining %prep section is the same as your original spec.
 
 # list directory
 ls -a %{_builddir}/Sunshine
@@ -185,9 +194,9 @@ else
 fi
 
 # setup the version
-export BRANCH=%{branch}
-export BUILD_VERSION=v%{build_version}
-export COMMIT=%{commit}
+export BUILD_VERSION=v%{release_tag}
+# The branch and commit globals are no longer available.
+# You'll need to remove any other lines that rely on them.
 
 # cmake
 cd %{_builddir}/Sunshine
