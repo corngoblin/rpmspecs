@@ -1,9 +1,3 @@
-The mv: cannot stat 'rpmspecs/sunshine': No such file or directory error is the key. It shows that your manual directory manipulation in the %prep section is incorrect for how the COPR build system sets up the Git repository.
-
-To fix this, we need to adapt the %prep section to the correct directory structure that COPR uses. The simplest and most reliable way is to let the rpmbuild environment handle the directories for you and avoid manual mv and cd commands.
-
-Here is the corrected spec file with a simplified and more robust %prep section:
-
 %global build_timestamp %(date +"%Y%m%d")
 
 # Define the GitHub repository owner and name
@@ -12,7 +6,6 @@ Here is the corrected spec file with a simplified and more robust %prep section:
 
 Name: Sunshine
 # Set a placeholder version that will be updated later.
-# We will use the git tag for the version and a date for the release.
 Version: 0.1
 Release: %{build_timestamp}%{?dist}
 Summary: Self-hosted game stream host for Moonlight.
@@ -95,34 +88,30 @@ Requires: libayatana-appindicator3 >= 0.5.3
 Self-hosted game stream host for Moonlight.
 
 %prep
-# Exit on error.
 set -e
 
-# Fetch the latest release tag from GitHub using curl and jq.
-# Since this is done in the %prep section, jq is guaranteed to be available.
+# Fetch the latest release tag from GitHub.
 release_tag=$(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
 if [ -z "$release_tag" ]; then
     echo "Error: Could not retrieve latest release tag." >&2
     exit 1
 fi
+echo "Latest release tag: $release_tag"
 
-# The COPR build system automatically clones the repository.
-# We just need to ensure the correct version is used for building.
-# The following commands will update the version and prepare the source for the build.
-git clone https://github.com/%{github_owner}/%{github_repo}.git Sunshine
+# The COPR build system automatically clones the Git repository.
+# We will use the cloned source to create a tarball with the correct directory name.
+# First, change to the directory where the source code is cloned.
+cd ..
+mv rpmspecs/sunshine Sunshine
 cd Sunshine
-git checkout $release_tag
-git submodule update --init --recursive
-rm -rf .git*
-# Now, the source directory is ready for the build.
-# We also create a tarball to satisfy the rpmbuild's requirement for a source tarball.
-tar -czf ../Sunshine-$release_tag.tar.gz .
+# Now create a tarball of the checked-out source.
+git archive --format=tar.gz --prefix=%{name}-$release_tag/ $release_tag > ../%{name}-$release_tag.tar.gz
 
-%setup -q -n Sunshine-$release_tag
-
+# Use the rpmbuild macro to unpack the newly created tarball.
+# This ensures a clean and correctly named source directory for the build.
+%setup -q -n %{name}-$release_tag
 
 %build
-# exit on error
 set -e
 
 # Detect the architecture and Fedora version
@@ -291,4 +280,4 @@ rm -f /usr/lib/modules-load.d/uhid.conf
 %{_datadir}/sunshine/**
 
 %changelog
-* Fri Aug 15 2025 Monkeygold
+* Fri Aug 15 2025 Monkeygold 
