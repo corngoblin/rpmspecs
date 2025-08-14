@@ -4,30 +4,18 @@
 %global github_owner LizardByte
 %global github_repo Sunshine
 
-# A more robust way to get the latest release tag from the GitHub API using jq
-# First, add a BuildRequires for jq, as it's the recommended tool for this.
-BuildRequires: jq
-
-%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
-
-# Use the release tag as the official version
-Version: %{release_tag}
-
-# The source URL is now a dynamic link to the latest release tarball
-Source0: https://github.com/%{github_owner}/%{github_repo}/archive/%{release_tag}.tar.gz
-Name: sunshine
-Release: 1%{?dist}
+Name: Sunshine
+# Set a placeholder version that will be updated later.
+# We will use the git tag for the version and a date for the release.
+Version: 0.1
+Release: %{build_timestamp}%{?dist}
 Summary: Self-hosted game stream host for Moonlight.
 License: GPLv3-only
 URL: https://github.com/LizardByte/Sunshine
 
-# The following macros for version, branch, and commit are no longer needed
-# and have been removed.
-
-%undefine _hardened_build
-
+# Add jq as a build dependency so it's available when we need it.
+BuildRequires: jq
 BuildRequires: appstream
-# BuildRequires: boost-devel >= 1.86.0
 BuildRequires: cmake >= 3.25.0
 BuildRequires: desktop-file-utils
 BuildRequires: libappstream-glib
@@ -101,10 +89,33 @@ Requires: libayatana-appindicator3 >= 0.5.3
 Self-hosted game stream host for Moonlight.
 
 %prep
-# Unpack the downloaded source tarball.
-# The tarball from GitHub has a folder named "%{github_repo}-%{release_tag}".
-# The %setup macro automatically extracts and changes into this directory.
-%setup -q -n %{github_repo}-%{release_tag}
+# Exit on error.
+set -e
+
+# The COPR build system clones the git repo into a sub-directory.
+# We need to move it to the expected build directory.
+cd ..
+mv rpmspecs/sunshine Sunshine
+cd Sunshine
+
+# Now that we're in the build environment and jq is installed,
+# we can fetch the latest release tag.
+release_tag=$(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
+if [ -z "$release_tag" ]; then
+    echo "Error: Could not retrieve latest release tag." >&2
+    exit 1
+fi
+echo "Latest release tag: $release_tag"
+
+# Replace the placeholder Version with the actual one from git.
+sed -i "s/^Version: 0.1/Version: $release_tag/g" ../SPECS/sunshine.spec
+
+# Create a tarball of the source code to simulate the Source0 tag.
+git archive --format=tar.gz --prefix=Sunshine-$release_tag/ $release_tag > Sunshine-$release_tag.tar.gz
+
+# Now, we manually unpack the tarball to prepare for the build.
+tar -xzf Sunshine-$release_tag.tar.gz
+cd Sunshine-$release_tag
 
 %build
 # exit on error
@@ -274,3 +285,6 @@ rm -f /usr/lib/modules-load.d/uhid.conf
 
 # Assets
 %{_datadir}/sunshine/**
+
+%changelog
+* Fri Aug 15 2025 Monkeygold
