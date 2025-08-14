@@ -63,6 +63,9 @@ rm -rf .git
 export CC=clang
 export CXX=clang++
 
+# Move into the source directory created by git clone
+cd Ymir
+
 # Configure a release build with optimizations
 cmake -S . -B build \
   -G Ninja \
