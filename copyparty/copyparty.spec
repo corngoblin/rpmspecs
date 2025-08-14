@@ -12,10 +12,11 @@ BuildRequires:  python3-setuptools
 BuildRequires:  python3-wheel
 BuildRequires:  python3-jinja2
 BuildRequires:  python3-build
-# python3-strip-hints is not a system package, so we'll install it with pip.
-# BuildRequires:  python3-strip-hints
 BuildRequires:  python3-requests
 BuildRequires:  python3-certifi
+# Add missing tools for the shell scripts
+BuildRequires:  wget
+BuildRequires:  psmisc
 
 %description
 Copyparty is a fast, standalone, c-extensible web server with a built-in UI for serving static files, archives, and directories.
@@ -24,10 +25,7 @@ Copyparty is a fast, standalone, c-extensible web server with a built-in UI for 
 %autosetup -p1 -n copyparty-%{version}
 
 %build
-# Install the build dependency 'strip-hints' using pip.
-python3 -m pip install --user -U strip-hints
-
-# Navigate to the scripts directory to run the build commands.
+# Go to the 'scripts' directory as instructed by the dev notes.
 pushd scripts
 # Download web dependencies from the latest GitHub release.
 ./make-sfx.sh fast dl-wd
@@ -39,12 +37,12 @@ popd
 # Create the destination directory.
 mkdir -p %{buildroot}/usr/local/bin
 
-# The script is in the source directory after being built.
-install -m 0755 copyparty-sfx.py %{buildroot}/usr/local/bin/copyparty-sfx.py
+# The log shows the file is correctly built into the 'dist' directory.
+install -m 0755 dist/copyparty-sfx.py %{buildroot}/usr/local/bin/copyparty-sfx.py
 
 %files
 /usr/local/bin/copyparty-sfx.py
 
 %changelog
-* Mon Aug 14 2025 monkeygold - 1.19.1-1
-- Initial package using the correct build process.
+* Wed Aug 14 2025 monkeygold - 1.19.1-1
+- Initial package with corrected build and install paths.
