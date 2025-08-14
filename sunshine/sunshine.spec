@@ -12,7 +12,7 @@ Version: %{release_tag}
 
 # The source URL is now a dynamic link to the latest release tarball
 Source0: https://github.com/%{github_owner}/%{github_repo}/archive/%{release_tag}.tar.gz
-Name: Sunshine
+Name: sunshine
 Release: 1%{?dist}
 Summary: Self-hosted game stream host for Moonlight.
 License: GPLv3-only
