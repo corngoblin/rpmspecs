@@ -4,7 +4,26 @@ Release:       1%{?dist}
 Summary:       A fast PlayStation 1 emulator
 License:       CC-BY-NC-ND-4.0
 URL:           https://github.com/stenzek/duckstation
+
+# Main source tarball from the release tag
 Source0:       https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9384.tar.gz
+
+# Cheat and patch databases
+Source1:       https://github.com/duckstation/chtdb/releases/download/latest/cheats.zip
+Source2:       https://github.com/duckstation/chtdb/releases/download/latest/patches.zip
+
+# Don't want extra flags producing a slower build than our other formats.
+%undefine _hardened_build
+%undefine _annotated_build
+%undefine _fortify_level
+%undefine _include_frame_pointers
+
+# Defines -O2, -flto, and others. We manage LTO ourselves.
+%global _general_options "-O3" "-pipe"
+%global _preprocessor_defines ""
+
+# We include debug information in the main package for user backtrace reporting.
+%global debug_package %{nil}
 
 BuildRequires: alsa-lib-devel
 BuildRequires: autoconf
@@ -12,6 +31,7 @@ BuildRequires: automake
 BuildRequires: brotli-devel
 BuildRequires: clang
 BuildRequires: cmake
+BuildRequires: curl
 BuildRequires: dbus-devel
 BuildRequires: egl-wayland-devel
 BuildRequires: extra-cmake-modules
@@ -69,60 +89,69 @@ BuildRequires: xcb-util-renderutil-devel
 BuildRequires: xcb-util-wm-devel
 BuildRequires: xcb-util-xrm-devel
 BuildRequires: zlib-devel
+BuildRequires: qt6-qtbase-devel
+BuildRequires: qt6-qtbase-private-devel
+BuildRequires: qt6-qttools
+BuildRequires: qt6-qttools-devel
+
+Requires: bash
+Requires: curl
+Requires: dbus
+Requires: freetype
+Requires: libpng
+Requires: libwebp
+Requires: libzip
+Requires: libzstd
+Requires: qt6-qtbase
+Requires: qt6-qtbase-gui
+Requires: qt6-qtimageformats
+Requires: qt6-qtsvg
 
 %description
-Duckstation is an open-source, multi-platform PlayStation 1 emulator. It focuses on
-playability, speed, and long-term maintainability. The emulator uses a JIT
-recompiler and has a robust user interface with features like save states,
-rewind, and various graphical enhancements.
+DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusing on playability, speed, and long-term maintainability. The goal is to be as accurate as possible while maintaining performance suitable for low-end devices.
+"Hack" options are discouraged, the default configuration should support all playable games with only some of the enhancements having compatibility issues.
+"PlayStation" and "PSX" are registered trademarks of Sony Interactive Entertainment Europe Limited. This project is not affiliated in any way with Sony Interactive Entertainment.
 
 %prep
 %setup -q -n duckstation-0.1-9384
 
+# Create the directory structure for cheats and patches.
+mkdir -p data/resources/
+cp %{SOURCE1} data/resources/cheats.zip
+cp %{SOURCE2} data/resources/patches.zip
+
 %build
-./scripts/deps/build-dependencies-linux.sh deps
+if [ ! -d "${PWD}/deps" ]; then
+  scripts/deps/build-dependencies-linux.sh -system-freetype -system-harfbuzz -system-libjpeg -system-libpng -system-libwebp -system-libzip -system-zlib -system-zstd -system-qt "${PWD}/deps"
+fi
 
-cmake -B build-release \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-      -DCMAKE_C_COMPILER=clang \
-      -DCMAKE_CXX_COMPILER=clang++ \
-      -DCMAKE_EXE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
-      -DCMAKE_MODULE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
-      -DCMAKE_SHARED_LINKER_FLAGS_INIT="-fuse-ld=lld" \
-      -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1-9384/deps" \
-      -G Ninja
-
-ninja -C build-release
+rm -fr build
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH="${PWD}/deps" \
+    -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+    -DCMAKE_EXE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
+    -DCMAKE_MODULE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
+    -DCMAKE_SHARED_LINKER_FLAGS_INIT="-fuse-ld=lld" \
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
+    -DALLOW_INSTALL=ON -DINSTALL_SELF_CONTAINED=ON \
+    -DCMAKE_INSTALL_PREFIX=%{buildroot}/opt/%{name}
+ninja -C build %{?_smp_mflags}
 
 %install
-# The -Dinstall flag from cmake is used to install files to the buildroot
-# with a prefix path, so a dedicated install step isn't needed here.
-# Instead, we will directly move the files to their final destination from
-# the default installation location.
-
-# Create the standard directories for desktop files and icons
-mkdir -p %{buildroot}/%{_datadir}/applications/
-mkdir -p %{buildroot}/%{_datadir}/icons/hicolor/512x512/apps/
-
-# Install the desktop file and icon
-install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot}%{_datadir}/applications/org.duckstation.DuckStation.desktop
-install -Dm644 scripts/packaging/org.duckstation.DuckStation.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
-
-# Create the final destination directory for the binary and link it to /usr/bin
-mkdir -p %{buildroot}/opt/duckstation
-cp build-release/bin/duckstation-qt %{buildroot}/opt/duckstation/
-ln -s /opt/duckstation/duckstation-qt %{buildroot}/%{_bindir}/duckstation
+rm -fr %{buildroot}
+ninja -C build install
+mkdir -p %{buildroot}/usr/bin
+ln -s /opt/duckstation/duckstation-qt %{buildroot}/usr/bin/duckstation-qt
+install -Dm644 scripts/packaging/org.duckstation.DuckStation.png %{buildroot}/usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
+install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot}/usr/share/applications/org.duckstation.DuckStation.desktop
 
 %files
 %license LICENSE
 /opt/duckstation
-%{_bindir}/duckstation
-%{_datadir}/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
-%{_datadir}/applications/org.duckstation.DuckStation.desktop
+/usr/bin/duckstation-qt
+/usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
+/usr/share/applications/org.duckstation.DuckStation.desktop
 
 %changelog
-* Fri Aug 15 2025 Your Name <you@example.com> - 0.1.9384-1
+* Fri Aug 15 2025 Monkeygold - 0.1.9384-1
 - Initial COPR package for Duckstation release v0.1-9384.
-- Added git to BuildRequires.
-- Adjusted installation paths for desktop file and icons.
