@@ -140,6 +140,7 @@ ninja -C build %{?_smp_mflags}
 %install
 rm -fr %{buildroot}
 ninja -C build install
+mkdir -p %{buildroot}/opt/duckstation
 mkdir -p %{buildroot}/usr/bin
 ln -s /opt/duckstation/duckstation-qt %{buildroot}/usr/bin/duckstation-qt
 install -Dm644 scripts/packaging/org.duckstation.DuckStation.png %{buildroot}/usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
