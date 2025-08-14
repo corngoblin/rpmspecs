@@ -7,7 +7,7 @@ Summary:        A Sega Saturn emulator
 
 License:        GPLv3
 URL:            https://github.com/StrikerX3/Ymir
-Source0:        https://github.com/StrikerX3/Ymir/archive/refs/tags/v%{version}.tar.gz
+# Source0:        https://github.com/StrikerX3/Ymir/archive/refs/tags/v%{version}.tar.gz
 
 BuildRequires:  clang
 BuildRequires:  cmake
@@ -48,7 +48,15 @@ BuildRequires:  liburing-devel
 Ymir is an open-source Sega Saturn emulator.
 
 %prep
-%autosetup -p1 -n Ymir-%{version}
+# Clone the repository with submodules
+git clone --recursive https://github.com/StrikerX3/Ymir.git
+cd Ymir
+
+# Checkout the specific version tag
+git checkout v%{version}
+
+# Remove the .git directory to create a clean source tree
+rm -rf .git
 
 %build
 # Set the compiler to Clang as recommended
@@ -88,5 +96,3 @@ install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.svg %{buildroot}%{_d
 %{_datadir}/icons/hicolor/scalable/apps/ymir.svg
 
 %changelog
-* Fri Aug 15 2025 Your Name <youremail@example.com> - 0.1.7-1
-- Initial COPR release.
