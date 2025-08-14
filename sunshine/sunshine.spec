@@ -1,3 +1,9 @@
+The mv: cannot stat 'rpmspecs/sunshine': No such file or directory error is the key. It shows that your manual directory manipulation in the %prep section is incorrect for how the COPR build system sets up the Git repository.
+
+To fix this, we need to adapt the %prep section to the correct directory structure that COPR uses. The simplest and most reliable way is to let the rpmbuild environment handle the directories for you and avoid manual mv and cd commands.
+
+Here is the corrected spec file with a simplified and more robust %prep section:
+
 %global build_timestamp %(date +"%Y%m%d")
 
 # Define the GitHub repository owner and name
@@ -92,30 +98,28 @@ Self-hosted game stream host for Moonlight.
 # Exit on error.
 set -e
 
-# The COPR build system clones the git repo into a sub-directory.
-# We need to move it to the expected build directory.
-cd ..
-mv rpmspecs/sunshine Sunshine
-cd Sunshine
-
-# Now that we're in the build environment and jq is installed,
-# we can fetch the latest release tag.
+# Fetch the latest release tag from GitHub using curl and jq.
+# Since this is done in the %prep section, jq is guaranteed to be available.
 release_tag=$(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
 if [ -z "$release_tag" ]; then
     echo "Error: Could not retrieve latest release tag." >&2
     exit 1
 fi
-echo "Latest release tag: $release_tag"
 
-# Replace the placeholder Version with the actual one from git.
-sed -i "s/^Version: 0.1/Version: $release_tag/g" ../SPECS/sunshine.spec
+# The COPR build system automatically clones the repository.
+# We just need to ensure the correct version is used for building.
+# The following commands will update the version and prepare the source for the build.
+git clone https://github.com/%{github_owner}/%{github_repo}.git Sunshine
+cd Sunshine
+git checkout $release_tag
+git submodule update --init --recursive
+rm -rf .git*
+# Now, the source directory is ready for the build.
+# We also create a tarball to satisfy the rpmbuild's requirement for a source tarball.
+tar -czf ../Sunshine-$release_tag.tar.gz .
 
-# Create a tarball of the source code to simulate the Source0 tag.
-git archive --format=tar.gz --prefix=Sunshine-$release_tag/ $release_tag > Sunshine-$release_tag.tar.gz
+%setup -q -n Sunshine-$release_tag
 
-# Now, we manually unpack the tarball to prepare for the build.
-tar -xzf Sunshine-$release_tag.tar.gz
-cd Sunshine-$release_tag
 
 %build
 # exit on error
