@@ -115,10 +115,10 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 %prep
 %setup -q -n duckstation-0.1-9384
 
-# Create the directory structure for cheats and patches.
 mkdir -p data/resources/
 cp %{SOURCE1} data/resources/cheats.zip
 cp %{SOURCE2} data/resources/patches.zip
+
 
 %build
 if [ ! -d "${PWD}/deps" ]; then
@@ -138,30 +138,16 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
 ninja -C build %{?_smp_mflags}
 
 %install
-# Clean up the build root from any previous runs
 rm -fr %{buildroot}
-
-# Install the application and its files using ninja.
 ninja -C build install
-
-# Create the destination directories for the symbolic link and binary.
 mkdir -p %{buildroot}/usr/bin
-mkdir -p %{buildroot}/opt/duckstation
-
-# Create the symbolic link for easy execution.
-ln -s /opt/duckstation/duckstation-qt %{buildroot}/usr/bin/duckstation
-
-# Install the desktop file and icon
-install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot}/usr/share/applications/org.duckstation.DuckStation.desktop
+ln -s /opt/duckstation/duckstation-qt %{buildroot}/usr/bin/duckstation-qt
 install -Dm644 scripts/packaging/org.duckstation.DuckStation.png %{buildroot}/usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
+install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot}/usr/share/applications/org.duckstation.DuckStation.desktop
 
 %files
 %license LICENSE
 /opt/duckstation
-/usr/bin/duckstation
+/usr/bin/duckstation-qt
 /usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
 /usr/share/applications/org.duckstation.DuckStation.desktop
-
-%changelog
-* Fri Aug 15 2025 Monkeygold - 0.1.9384-1
-- Initial COPR package for Duckstation release v0.1-9384.
