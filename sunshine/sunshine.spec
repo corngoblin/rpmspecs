@@ -4,15 +4,16 @@
 %global github_owner LizardByte
 %global github_repo Sunshine
 
+BuildRequires: jq
 
-%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
 
 # Use the release tag as the official version
 Version: %{release_tag}
 
 # The source URL is now a dynamic link to the latest release tarball
 Source0: https://github.com/%{github_owner}/%{github_repo}/archive/%{release_tag}.tar.gz
-Name: sunshine
+Name: Sunshine
 Release: 1%{?dist}
 Summary: Self-hosted game stream host for Moonlight.
 License: GPLv3-only
