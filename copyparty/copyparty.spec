@@ -11,8 +11,9 @@ BuildRequires:  python3-pip
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-wheel
 BuildRequires:  python3-jinja2
-BuildRequires:  python3-strip-hints
 BuildRequires:  python3-build
+# The python3-strip-hints RPM does not exist, so it will be installed via pip.
+# BuildRequires:  python3-strip-hints
 
 %description
 Copyparty is a fast, standalone, c-extensible web server with a built-in UI for serving static files, archives, and directories.
@@ -21,10 +22,10 @@ Copyparty is a fast, standalone, c-extensible web server with a built-in UI for 
 %autosetup -p1 -n copyparty-%{version}
 
 %build
-# Use python3-pip to install the necessary build dependencies to the buildroot
-# The build dependencies are now installed as part of the build step,
-# to ensure they are available in the isolated chroot.
-python3 -m pip install --user -U build setuptools wheel jinja2 strip_hints
+# Install the build dependencies from PyPI that are not available as RPMs.
+python3 -m pip install --user -U strip-hints
+# Use python3-pip to install the other necessary build dependencies
+python3 -m pip install --user -U build setuptools wheel jinja2
 
 # Run the build process
 python3 -m build
