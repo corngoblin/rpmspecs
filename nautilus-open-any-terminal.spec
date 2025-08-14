@@ -1,7 +1,7 @@
 %global forgeurl https://github.com/Stunkymonkey/nautilus-open-any-terminal
-%global version 0.6.0
-%global commit 21034de459ac602067e5b8c9933fc156893b4b64
-%global date 20250125
+%global version 0.6.1
+%global commit dfdc4dd7e4b384f9ae1cde78e77fdb86debd864b
+%global date 20250814
 %global source_date_epoch_from_changelog 0
 %forgemeta
 
