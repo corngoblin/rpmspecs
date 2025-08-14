@@ -80,6 +80,9 @@ cmake -S . -B build \
 cmake --build build --parallel
 
 %install
+# Move into the source directory before running install commands
+cd Ymir
+
 # Let CMake handle the installation to the correct prefix
 cmake --install build
 
