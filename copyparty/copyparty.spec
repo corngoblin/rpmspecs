@@ -1,10 +1,10 @@
 Name:           copyparty
-Version:        0.0.0
+Version:        1.19.1
 Release:        1%{?dist}
 Summary:        A standalone, multi-threaded, c-extensible web server.
 License:        MIT
 URL:            https://github.com/9001/copyparty
-Source0:        %{url}/archive/main/copyparty-main.tar.gz
+Source0:        %{url}/archive/refs/tags/v1.19.1.tar.gz
 
 BuildRequires:  python3-devel
 BuildRequires:  python3-pip
