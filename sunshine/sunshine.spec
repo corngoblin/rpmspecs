@@ -279,3 +279,4 @@ rm -f /usr/lib/modules-load.d/uhid.conf
 %{_datadir}/sunshine/**
 
 %changelog
+* Fri Aug 15 2025 Monkeygold - 0.1.9384-1
