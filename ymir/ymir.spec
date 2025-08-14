@@ -41,7 +41,7 @@ BuildRequires:  libdrm-devel
 BuildRequires:  mesa-libgbm-devel
 BuildRequires:  libusb1-devel
 BuildRequires:  libdecor-devel
-BuildRequires:  pipewire-jack-audio-connection-kit-devel
+BuildRequires:  jack-audio-connection-kit-devel
 BuildRequires:  liburing-devel
 
 %description
@@ -99,5 +99,3 @@ install -Dm0644 apps/ymir-sdl3/res/ymir.png %{buildroot}%{_datadir}/icons/hicolo
 %{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
 %changelog
-* Fri Aug 15 2025 Your Name <youremail@example.com> - 0.1.7-1
-- Initial COPR release.
