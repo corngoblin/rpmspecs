@@ -4,8 +4,9 @@
 %global github_owner LizardByte
 %global github_repo Sunshine
 
-# Get the latest release tag from the GitHub API
-%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+BuildRequires: jq
+
+%global release_tag %(curl -s https://api.github.com/repos/%{github_owner}/%{github_repo}/releases/latest | jq -r '.tag_name')
 
 # Use the release tag as the official version
 Version: %{release_tag}
@@ -18,8 +19,6 @@ Summary: Self-hosted game stream host for Moonlight.
 License: GPLv3-only
 URL: https://github.com/LizardByte/Sunshine
 
-# The following macros for version, branch, and commit are no longer needed
-# and have been removed.
 
 %undefine _hardened_build
 
@@ -99,12 +98,9 @@ Self-hosted game stream host for Moonlight.
 
 %prep
 # Unpack the downloaded source tarball.
-%setup -q -n %{name}-%{release_tag}
-
-# The remaining %prep section is the same as your original spec.
-
-# list directory
-ls -a %{_builddir}/Sunshine
+# The tarball from GitHub has a folder named "%{github_repo}-%{release_tag}".
+# The %setup macro automatically extracts and changes into this directory.
+%setup -q -n %{github_repo}-%{release_tag}
 
 %build
 # exit on error
@@ -117,7 +113,7 @@ cuda_supported_architectures=("x86_64" "aarch64")
 
 # prepare CMAKE args
 cmake_args=(
-  "-B=%{_builddir}/Sunshine/build"
+  "-B=build"
   "-G=Unix Makefiles"
   "-S=."
   "-DBUILD_DOCS=OFF"
@@ -195,15 +191,12 @@ fi
 
 # setup the version
 export BUILD_VERSION=v%{release_tag}
-# The branch and commit globals are no longer available.
-# You'll need to remove any other lines that rely on them.
 
 # cmake
-cd %{_builddir}/Sunshine
 echo "cmake args:"
 echo "${cmake_args[@]}"
 cmake "${cmake_args[@]}"
-make -j$(nproc) -C "%{_builddir}/Sunshine/build"
+make -j$(nproc) -C "build"
 
 %check
 # validate the metainfo file
@@ -212,11 +205,11 @@ appstream-util validate %{buildroot}%{_metainfodir}/*.metainfo.xml
 desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 
 # run tests
-cd %{_builddir}/Sunshine/build
+cd build
 xvfb-run ./tests/test_sunshine
 
 %install
-cd %{_builddir}/Sunshine/build
+cd build
 %make_install
 
 # Add modules-load configuration
