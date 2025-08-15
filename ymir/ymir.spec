@@ -83,8 +83,9 @@ cmake --build build --parallel
 # Move into the source directory before running install commands
 cd Ymir
 
-# Let CMake handle the installation to the correct prefix, using DESTDIR
-cmake --install build --prefix /usr --install-destdir %{buildroot}
+# Set the DESTDIR environment variable and then let CMake handle the installation
+# This tells CMake to prepend the BUILDROOT to all installation paths
+DESTDIR=%{buildroot} cmake --install build
 
 # Move and rename the executable to /usr/bin
 mv %{buildroot}%{_bindir}/ymir-sdl3 %{buildroot}%{_bindir}/ymir
