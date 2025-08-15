@@ -87,29 +87,24 @@ cmake -S . -B build \
 cmake --build build --parallel
 
 %install
-# Move into the source directory before running install commands
 cd Ymir
 
-# Let CMake handle the initial installation to the build root
+# Let CMake install to the buildroot
 DESTDIR=%{buildroot} cmake --install build
 
-# Rename the main executable to 'ymir'
-mv %{buildroot}%{_bindir}/ymir-sdl3-0.1.7 %{buildroot}%{_bindir}/ymir
+# Ensure /usr/bin exists in buildroot
+install -d %{buildroot}/usr/bin
 
-# Remove the default symlink created by CMake and create new ones that point to the executable
-rm %{buildroot}%{_bindir}/ymir-sdl3
-ln -sf ymir %{buildroot}%{_bindir}/ymir-sdl3
-ln -sf ymir %{buildroot}%{_bindir}/ymir-0.1.7
+# Rename and move the main executable into /usr/bin
+mv %{buildroot}%{_bindir}/ymir-sdl3-%{version} %{buildroot}/usr/bin/ymir
 
-# Also rename the ymdasm executable and create a symlink
-mv %{buildroot}%{_bindir}/ymdasm-0.1.7 %{buildroot}%{_bindir}/ymdasm
-ln -sf ymdasm %{buildroot}%{_bindir}/ymdasm-0.1.7
+# Install the desktop file
+install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.desktop \
+    %{buildroot}%{_datadir}/applications/io.github.strikerx3.ymir.desktop
 
-# Install the desktop file, which is configured to look for the 'ymir' executable
-install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.desktop %{buildroot}%{_datadir}/applications/io.github.strikerx3.ymir.desktop
-
-# Install the icon file
-install -Dm0644 apps/ymir-sdl3/res/ymir.png %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/ymir.png
+# Install the icon
+install -Dm0644 apps/ymir-sdl3/res/ymir.png \
+    %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
 %files
 %doc
