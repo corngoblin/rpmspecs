@@ -40,12 +40,19 @@ BuildRequires:  wayland-protocols-devel
 BuildRequires:  libdrm-devel
 BuildRequires:  mesa-libgbm-devel
 BuildRequires:  libusb1-devel
-BuildRequires:  libdecor-devel
 BuildRequires:  jack-audio-connection-kit-devel
 BuildRequires:  liburing-devel
 
 %description
 Ymir is an open-source Sega Saturn emulator.
+
+%package devel
+Summary: Development files for ymir
+Requires: %{name} = %{version}-%{release}
+
+%description devel
+The development files for Ymir, including headers, static libraries,
+and CMake configuration files.
 
 %prep
 # Clone the repository with submodules
@@ -96,11 +103,20 @@ install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.desktop %{buildroot}
 # Install the icon file with the generic name "ymir.png" so the desktop file can find it
 install -Dm0644 apps/ymir-sdl3/res/ymir.png %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
-
 %files
 %doc
 %{_bindir}/ymir
+%{_bindir}/ymdasm
 %{_datadir}/applications/io.github.strikerx3.ymir.desktop
 %{_datadir}/icons/hicolor/256x256/apps/ymir.png
+
+%files devel
+%{_bindir}/ymir-sdl3-0.1.7
+%{_bindir}/ymdasm-0.1.7
+%{_libdir}/librtmidi.a
+%{_libdir}/cmake/Ymir/
+%{_libdir}/pkgconfig/rtmidi.pc
+%{_includedir}/rtmidi/
+%{_datadir}/rtmidi/
 
 %changelog
