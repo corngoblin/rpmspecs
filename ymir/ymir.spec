@@ -94,9 +94,15 @@ cd Ymir
 # This tells CMake to prepend the BUILDROOT to all installation paths
 DESTDIR=%{buildroot} cmake --install build
 
-# Rename the final executable and create a symlink
-mv %{buildroot}%{_bindir}/ymir-sdl3 %{buildroot}%{_bindir}/ymir
-ln -s ymir %{buildroot}%{_bindir}/ymir-sdl3
+# Rename the final executable to 'ymir' and the accompanying symlink
+mv %{buildroot}%{_bindir}/ymir-sdl3-0.1.7 %{buildroot}%{_bindir}/ymir
+mv %{buildroot}%{_bindir}/ymir-sdl3 %{buildroot}%{_bindir}/ymir-sdl3-0.1.7
+ln -sf ymir-sdl3-0.1.7 %{buildroot}%{_bindir}/ymir-sdl3
+
+# Rename the ymdasm executable and its symlink
+mv %{buildroot}%{_bindir}/ymdasm-0.1.7 %{buildroot}%{_bindir}/ymdasm
+ln -sf ymdasm %{buildroot}%{_bindir}/ymdasm-0.1.7
+
 
 # Install the desktop file
 install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.desktop %{buildroot}%{_datadir}/applications/io.github.strikerx3.ymir.desktop
@@ -107,14 +113,14 @@ install -Dm0644 apps/ymir-sdl3/res/ymir.png %{buildroot}%{_datadir}/icons/hicolo
 %files
 %doc
 %{_bindir}/ymir
+%{_bindir}/ymir-sdl3-0.1.7
 %{_bindir}/ymir-sdl3
 %{_bindir}/ymdasm
+%{_bindir}/ymdasm-0.1.7
 %{_datadir}/applications/io.github.strikerx3.ymir.desktop
 %{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
 %files devel
-%{_bindir}/ymir-sdl3-0.1.7
-%{_bindir}/ymdasm-0.1.7
 %{_libdir}/librtmidi.a
 %{_libdir}/cmake/Ymir/
 %{_libdir}/pkgconfig/rtmidi.pc
