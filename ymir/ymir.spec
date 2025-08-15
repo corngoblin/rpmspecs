@@ -99,8 +99,6 @@ install -Dm0644 apps/ymir-sdl3/res/ymir.png \
     %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
 %files
-%license LICENSE*
-%doc README* CHANGELOG*
 %{_bindir}/ymir*
 %{_bindir}/ymdasm*
 %{_datadir}/applications/io.github.strikerx3.ymir.desktop
