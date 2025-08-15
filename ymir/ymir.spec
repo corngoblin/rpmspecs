@@ -83,8 +83,8 @@ cmake --build build --parallel
 # Move into the source directory before running install commands
 cd Ymir
 
-# Let CMake handle the installation to the correct prefix
-cmake --install build
+# Let CMake handle the installation to the correct prefix, using DESTDIR
+cmake --install build --prefix /usr --install-destdir %{buildroot}
 
 # Move and rename the executable to /usr/bin
 mv %{buildroot}%{_bindir}/ymir-sdl3 %{buildroot}%{_bindir}/ymir
@@ -94,6 +94,7 @@ install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.desktop %{buildroot}
 
 # Install the icon file with the generic name "ymir.png" so the desktop file can find it
 install -Dm0644 apps/ymir-sdl3/res/ymir.png %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/ymir.png
+
 
 %files
 %doc
