@@ -88,37 +88,27 @@ cmake --build build --parallel
 
 %install
 cd Ymir
-
-# Let CMake install to the buildroot
 DESTDIR=%{buildroot} cmake --install build
 
-# Ensure /usr/bin exists in buildroot
-install -d %{buildroot}/usr/bin
-
-# Rename and move the main executable into /usr/bin
-mv %{buildroot}%{_bindir}/ymir-sdl3-%{version} %{buildroot}/usr/bin/ymir
-
-# Install the desktop file
+# Install desktop file
 install -Dm0644 apps/ymir-sdl3/res/io.github.strikerx3.ymir.desktop \
     %{buildroot}%{_datadir}/applications/io.github.strikerx3.ymir.desktop
 
-# Install the icon
+# Install icon
 install -Dm0644 apps/ymir-sdl3/res/ymir.png \
     %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
 %files
-%doc
-%{_bindir}/ymir
-%{_bindir}/ymir-sdl3
-%{_bindir}/ymir-0.1.7
-%{_bindir}/ymdasm
-%{_bindir}/ymdasm-0.1.7
+%license LICENSE*
+%doc README* CHANGELOG*
+%{_bindir}/ymir*
+%{_bindir}/ymdasm*
 %{_datadir}/applications/io.github.strikerx3.ymir.desktop
 %{_datadir}/icons/hicolor/256x256/apps/ymir.png
 
 %files devel
-%{_libdir}/librtmidi.a
+%{_libdir}/*.a
 %{_libdir}/cmake/Ymir/
-%{_libdir}/pkgconfig/rtmidi.pc
+%{_libdir}/pkgconfig/*.pc
 %{_includedir}/rtmidi/
 %{_datadir}/rtmidi/
