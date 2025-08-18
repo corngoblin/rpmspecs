@@ -2,24 +2,18 @@ Name:           woeusb-ng
 Version:        0.2.12
 Release:        1%{?dist}
 Summary:        Create a Windows USB stick installer from a real Windows DVD or image
-
 License:        GPLv3+
 URL:            https://github.com/WoeUSB/WoeUSB-ng
-Source0:        %{url}/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
-
-# Patch out upstream’s hardcoded /usr/local install hacks in setup.py
-Patch0:         %{name}-setup-no-postinstall.patch
+Source0:        https://github.com/WoeUSB/WoeUSB-ng/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 
-# Build system
-BuildRequires:  python3-devel
-BuildRequires:  python3-pyproject-rpm-macros
-BuildRequires:  fdupes
-BuildRequires:  desktop-file-utils
+BuildRequires:  make
 BuildRequires:  polkit
-
-# Runtime deps
+BuildRequires:  python3-setuptools
+BuildRequires:  python3-distutils-extra
+BuildRequires:  fdupes
+Requires:       bash
 Requires:       dosfstools
 Requires:       gawk
 Requires:       grep
@@ -33,64 +27,50 @@ Requires:       polkit
 Requires:       python3-wxpython4
 
 %description
-WoeUSB-ng is a Linux program to create a Windows USB stick installer from
-a real Windows DVD or disk image.
+A Linux program to create a Windows USB stick installer from a real Windows DVD or image.
 
-It provides:
-- woeusb: command-line utility
-- woeusbgui: graphical utility
+This package contains two programs:
+- woeusb: A command-line utility that enables you to create your own bootable
+          Windows installation USB storage device
+- woeusbgui: Graphical frontend for woeusb
 
-Supported images:
-- Windows Vista, Windows 7, Windows 8.x, Windows 10
-- All editions, languages, and Windows PE
+Supported images: Windows Vista, 7, 8.x, 10, 11.
 
 Supported boot modes:
-- Legacy/MBR-style boot
-- UEFI boot for Windows 7+ (FAT target required)
+- Legacy BIOS (MBR)
+- UEFI (Windows 7+)
 
 %prep
-%autosetup -p1 -n WoeUSB-ng-%{version}
-# fix shebangs
-sed -i '1s|/usr/bin/env python3|/usr/bin/python3|' WoeUSB/{core.py,gui.py,list_devices.py,woeusb,woeusbgui}
-# fix desktop icon name
-sed -i 's|^Icon=.*|Icon=woeusb-ng|' miscellaneous/WoeUSB-ng.desktop
-
-%generate_buildrequires
-%pyproject_buildrequires
+%autosetup -n WoeUSB-ng-%{version}
 
 %build
-%pyproject_wheel
+%py3_build
 
 %install
-%pyproject_install
-%pyproject_save_files WoeUSB
+%py3_install
 
-# Install icon (256x256 png)
-install -Dm644 WoeUSB/data/woeusb-logo.png \
-  %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/woeusb-ng.png
+# Install icon and desktop integration
+install -D -m644 WoeUSB/data/woeusb-logo.png \
+    %{buildroot}%{_datadir}/pixmaps/%{name}.png
 
-# Install desktop entry
-install -Dm644 miscellaneous/WoeUSB-ng.desktop \
-  %{buildroot}%{_datadir}/applications/WoeUSB-ng.desktop
+install -D -m644 miscellaneous/WoeUSB-ng.desktop \
+    %{buildroot}%{_datadir}/applications/WoeUSB-ng.desktop
 
-# Install polkit policy
-install -Dm644 miscellaneous/com.github.woeusb.woeusb-ng.policy \
-  %{buildroot}%{_datadir}/polkit-1/actions/com.github.woeusb.woeusb-ng.policy
+install -D -m644 miscellaneous/com.github.woeusb.%{name}.policy \
+    %{buildroot}%{_datadir}/polkit-1/actions/com.github.woeusb.%{name}.policy
 
 %fdupes %{buildroot}%{python3_sitelib}
 
-%check
-desktop-file-validate %{buildroot}%{_datadir}/applications/WoeUSB-ng.desktop
-
-%files -f %{pyproject_files}
-%doc README.md
+%files
 %license COPYING
+%doc README.md
 %{_bindir}/woeusb
 %{_bindir}/woeusbgui
+%{_datadir}/pixmaps/%{name}.png
 %{_datadir}/applications/WoeUSB-ng.desktop
-%{_datadir}/icons/hicolor/256x256/apps/woeusb-ng.png
-%{_datadir}/polkit-1/actions/com.github.woeusb.woeusb-ng.policy
+%{_datadir}/polkit-1/actions/com.github.woeusb.%{name}.policy
+%{python3_sitelib}/WoeUSB*
 
 %changelog
-* Mon Aug 18 2025 Monkeygold - 0.2.12-1
-
+* Mon Aug 18 2025 Monkeygold 0.2.12-1
+- Initial build for Fedora COPR
