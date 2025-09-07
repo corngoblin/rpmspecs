@@ -1,12 +1,12 @@
 Name:          duckstation
-Version:       0.1.9384
+Version:       0.1.9483
 Release:       1%{?dist}
 Summary:       A fast PlayStation 1 emulator
 License:       CC-BY-NC-ND-4.0
 URL:           https://github.com/stenzek/duckstation
 
 # Main source tarball from the release tag
-Source0:       https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9384.tar.gz
+Source0:       https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9483.tar.gz
 
 # Cheat and patch databases
 Source1:       https://github.com/duckstation/chtdb/releases/download/latest/cheats.zip
@@ -113,7 +113,7 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 "PlayStation" and "PSX" are registered trademarks of Sony Interactive Entertainment Europe Limited. This project is not affiliated in any way with Sony Interactive Entertainment.
 
 %prep
-%setup -q -n duckstation-0.1-9384
+%setup -q -n duckstation-0.1-9483
 
 mkdir -p data/resources/
 cp %{SOURCE1} data/resources/cheats.zip
