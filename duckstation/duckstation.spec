@@ -31,6 +31,7 @@ BuildRequires: automake
 BuildRequires: brotli-devel
 BuildRequires: clang
 BuildRequires: cmake
+BuildRequires: cpuinfo-devel
 BuildRequires: curl
 BuildRequires: dbus-devel
 BuildRequires: egl-wayland-devel
