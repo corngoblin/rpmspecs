@@ -124,7 +124,7 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 
 # Unpack and build discord-rpc from Source3 before proceeding.
 # The `%setup -a 3` will unpack the tarball from Source3.
-%setup -a 3 -q
+%setup -q -a 3
 # Navigate to the discord-rpc source directory, build, and install.
 pushd discord-rpc-3.4.0
 mkdir build
