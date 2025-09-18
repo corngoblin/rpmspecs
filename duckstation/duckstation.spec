@@ -145,17 +145,17 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
 ninja -C build %{?_smp_mflags}
 
 %install
- %install
- rm -fr %{buildroot}
- ninja -C build install
-+# Manually copy the self-built Discord RPC library to the install directory
-+mkdir -p %{buildroot}/opt/duckstation/lib
-+cp %{_builddir}/duckstation-0.1.9483/deps/lib64/libdiscord-rpc.so %{buildroot}/opt/duckstation/lib/
+rm -fr %{buildroot}
+ninja -C build install
+# Manually copy the self-built Discord RPC library to the install directory
+mkdir -p %{buildroot}/opt/duckstation/lib
+cp %{_builddir}/duckstation-0.1.9483/deps/lib64/libdiscord-rpc.so %{buildroot}/opt/duckstation/lib/
 mkdir -p %{buildroot}/opt/duckstation
 mkdir -p %{buildroot}/usr/bin
 ln -s /opt/duckstation/duckstation-qt %{buildroot}/usr/bin/duckstation-qt
 install -Dm644 scripts/packaging/org.duckstation.DuckStation.png %{buildroot}/usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
 install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot}/usr/share/applications/org.duckstation.DuckStation.desktop
+
 
 %files
 %license LICENSE
