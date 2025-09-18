@@ -142,6 +142,13 @@ mkdir -p data/resources/
 cp %{SOURCE1} data/resources/cheats.zip
 cp %{SOURCE2} data/resources/patches.zip
 
+# Use sed to fix the SDL3 version requirement
+sed -i 's/find_package(SDL3 3.2.18/find_package(SDL3 3.2.16/' CMakeModules/DuckStationDependencies.cmake
+
+mkdir -p data/resources/
+cp %{SOURCE1} data/resources/cheats.zip
+cp %{SOURCE2} data/resources/patches.zip
+
 %build
 if [ ! -d "${PWD}/deps" ]; then
     scripts/deps/build-dependencies-linux.sh "${PWD}/deps"
