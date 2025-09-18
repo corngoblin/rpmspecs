@@ -25,21 +25,19 @@ Source2:       https://github.com/duckstation/chtdb/releases/download/latest/pat
 # We include debug information in the main package for user backtrace reporting.
 %global debug_package %{nil}
 
+# BuildRequires for dependencies handled by the build script have been removed.
 BuildRequires: alsa-lib-devel
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: brotli-devel
 BuildRequires: clang
 BuildRequires: cmake
-BuildRequires: cpuinfo-devel
 BuildRequires: curl
 BuildRequires: dbus-devel
 BuildRequires: egl-wayland-devel
 BuildRequires: extra-cmake-modules
-BuildRequires: fontconfig-devel
 BuildRequires: gcc-c++
 BuildRequires: git
-BuildRequires: gtk3-devel
 BuildRequires: libavcodec-free-devel
 BuildRequires: libavformat-free-devel
 BuildRequires: libavutil-free-devel
@@ -78,9 +76,7 @@ BuildRequires: patch
 BuildRequires: pcre2-devel
 BuildRequires: perl-Digest-SHA
 BuildRequires: pipewire-devel
-BuildRequires: plutosvg-devel
 BuildRequires: pulseaudio-libs-devel
-BuildRequires: SDL3-devel
 BuildRequires: systemd-devel
 BuildRequires: wayland-devel
 BuildRequires: xcb-util-cursor-devel
@@ -97,6 +93,7 @@ BuildRequires: qt6-qtbase-private-devel
 BuildRequires: qt6-qttools
 BuildRequires: qt6-qttools-devel
 
+# The 'Requires' section should still list the dependencies for the final packaged application.
 Requires: bash
 Requires: curl
 Requires: dbus
@@ -121,38 +118,41 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 # Use sed to fix the SDL3 version requirement
 sed -i 's/find_package(SDL3 3.2.18/find_package(SDL3 3.2.16/' CMakeModules/DuckStationDependencies.cmake
 
-
 mkdir -p data/resources/
 cp %{SOURCE1} data/resources/cheats.zip
 cp %{SOURCE2} data/resources/patches.zip
 
-
 %build
-if [ ! -d "${PWD}/deps" ]; then
-  scripts/deps/build-dependencies-linux.sh "${PWD}/deps"
-fi
+# Run the dependency build script, installing into a temporary directory
+scripts/packaging/build-dependencies-linux.sh "%{_builddir}/%{name}-%{version}/deps"
 
-rm -fr build
-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1.9483/deps;/usr" \
+# Now, build the main project, and explicitly tell it where to find all built dependencies.
+cmake -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH="%{_builddir}/%{name}-%{version}/deps;/usr" \
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
     -DCMAKE_EXE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_MODULE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_SHARED_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
     -DALLOW_INSTALL=ON -DINSTALL_SELF_CONTAINED=ON \
-    -DCMAKE_INSTALL_PREFIX=%{buildroot}/opt/%{name} 
+    -DCMAKE_INSTALL_PREFIX=%{buildroot}/opt/%{name}
+
 ninja -C build %{?_smp_mflags}
 
 %install
 rm -fr %{buildroot}
 ninja -C build install
-# Manually copy the self-built Discord RPC library to the install directory
-mkdir -p %{buildroot}/opt/duckstation/lib
-cp %{_builddir}/duckstation-0.1.9483/deps/lib64/libdiscord-rpc.so %{buildroot}/opt/duckstation/lib/
-mkdir -p %{buildroot}/opt/duckstation
+
+# Create necessary directories
 mkdir -p %{buildroot}/usr/bin
-ln -s /opt/duckstation/duckstation-qt %{buildroot}/usr/bin/duckstation-qt
+mkdir -p %{buildroot}/usr/share/applications
+mkdir -p %{buildroot}/usr/share/icons/hicolor/512x512/apps
+
+# Symlink the binary
+ln -s /opt/%{name}/duckstation-qt %{buildroot}/usr/bin/duckstation-qt
+
+# Install desktop files and icons
 install -Dm644 scripts/packaging/org.duckstation.DuckStation.png %{buildroot}/usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
 install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot}/usr/share/applications/org.duckstation.DuckStation.desktop
 
@@ -163,3 +163,4 @@ install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot
 /usr/bin/duckstation-qt
 /usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
 /usr/share/applications/org.duckstation.DuckStation.desktop
+
