@@ -123,6 +123,8 @@ cp %{SOURCE1} data/resources/cheats.zip
 cp %{SOURCE2} data/resources/patches.zip
 
 %build
+# Change to the source directory before running the build commands
+cd %{_builddir}/%{name}-0.1-9483
 # Run the dependency build script, installing into a temporary directory
 scripts/packaging/build-dependencies-linux.sh "%{_builddir}/%{name}-%{version}/deps"
 
@@ -163,4 +165,3 @@ install -Dm644 scripts/packaging/org.duckstation.DuckStation.desktop %{buildroot
 /usr/bin/duckstation-qt
 /usr/share/icons/hicolor/512x512/apps/org.duckstation.DuckStation.png
 /usr/share/applications/org.duckstation.DuckStation.desktop
-
