@@ -123,8 +123,6 @@ cp %{SOURCE1} data/resources/cheats.zip
 cp %{SOURCE2} data/resources/patches.zip
 
 %build
-# Change to the source directory before running the build commands
-cd %{_builddir}/%{name}-0.1-9483
 # Run the dependency build script, installing into a temporary directory
 scripts/packaging/build-dependencies-linux.sh "%{_builddir}/%{name}-%{version}/deps"
 
