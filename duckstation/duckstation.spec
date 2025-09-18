@@ -1,16 +1,16 @@
-Name:           duckstation
-Version:        0.1.9483
-Release:        1%{?dist}
-Summary:        A fast PlayStation 1 emulator
-License:        CC-BY-NC-ND-4.0
-URL:            https://github.com/stenzek/duckstation
+Name:          duckstation
+Version:       0.1.9483
+Release:       1%{?dist}
+Summary:       A fast PlayStation 1 emulator
+License:       CC-BY-NC-ND-4.0
+URL:           https://github.com/stenzek/duckstation
 
 # Main source tarball from the release tag
-Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9483.tar.gz
+Source0:       https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-9483.tar.gz
 
 # Cheat and patch databases
-Source1:        https://github.com/duckstation/chtdb/releases/download/latest/cheats.zip
-Source2:        https://github.com/duckstation/chtdb/releases/download/latest/patches.zip
+Source1:       https://github.com/duckstation/chtdb/releases/download/latest/cheats.zip
+Source2:       https://github.com/duckstation/chtdb/releases/download/latest/patches.zip
 
 # Don't want extra flags producing a slower build than our other formats.
 %undefine _hardened_build
@@ -121,29 +121,27 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 # Use sed to fix the SDL3 version requirement
 sed -i 's/find_package(SDL3 3.2.18/find_package(SDL3 3.2.16/' CMakeModules/DuckStationDependencies.cmake
 
+
 mkdir -p data/resources/
 cp %{SOURCE1} data/resources/cheats.zip
 cp %{SOURCE2} data/resources/patches.zip
 
+
 %build
-# The build-dependencies-linux.sh script is for building all dependencies, we only need a few.
-# It seems this script would have also built discord-rpc, but since we are removing that, we
-# will also remove this script call to ensure a clean build.
-# if [ ! -d "${PWD}/deps" ]; then
-#     scripts/deps/build-dependencies-linux.sh "${PWD}/deps"
-# fi
+if [ ! -d "${PWD}/deps" ]; then
+  scripts/deps/build-dependencies-linux.sh "${PWD}/deps"
+fi
 
 rm -fr build
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1-9483/deps;/usr" \
+    -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1.9483/deps;/usr" \
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
     -DCMAKE_EXE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_MODULE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_SHARED_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
     -DALLOW_INSTALL=ON -DINSTALL_SELF_CONTAINED=ON \
-    -DUSE_FBDEV=ON \
-    -DCMAKE_INSTALL_PREFIX=%{buildroot}/opt/%{name}
+    -DCMAKE_INSTALL_PREFIX=%{buildroot}/opt/%{name} 
 ninja -C build %{?_smp_mflags}
 
 %install
