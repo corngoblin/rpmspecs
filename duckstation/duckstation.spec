@@ -149,14 +149,13 @@ fi
 
 rm -fr build
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1-9384/deps;/usr" \
+    -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1.9483/deps;/usr" \
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
     -DCMAKE_EXE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_MODULE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_SHARED_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
     -DALLOW_INSTALL=ON -DINSTALL_SELF_CONTAINED=ON \
-    -DUSE_FBDEV=ON \
     -DCMAKE_INSTALL_PREFIX=%{buildroot}/opt/%{name}
 ninja -C build %{?_smp_mflags}
 
