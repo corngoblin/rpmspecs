@@ -124,7 +124,7 @@ cp %{SOURCE2} data/resources/patches.zip
 
 %build
 # Run the dependency build script, installing into a temporary directory
-scripts/packaging/build-dependencies-linux.sh "%{_builddir}/%{name}-%{version}/deps"
+%{_builddir}/%{name}-0.1-9483/scripts/packaging/build-dependencies-linux.sh "%{_builddir}/%{name}-%{version}/deps"
 
 # Now, build the main project, and explicitly tell it where to find all built dependencies.
 cmake -B build -G Ninja \
