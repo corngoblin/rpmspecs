@@ -119,28 +119,22 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 "PlayStation" and "PSX" are registered trademarks of Sony Interactive Entertainment Europe Limited. This project is not affiliated in any way with Sony Interactive Entertainment.
 
 %prep
-# Unpack the main source first.
-%setup -q -n duckstation-0.1-9483
-
-# Unpack and build discord-rpc from Source3 before proceeding.
-# The `%setup -a 3` will unpack the tarball from Source3.
-%setup -q -a 3
-# Navigate to the discord-rpc source directory, build, and install.
-pushd discord-rpc-3.4.0
+# Manually unpack, build, and install the discord-rpc source.
+# Create a temporary directory for discord-rpc.
+rm -rf discord-rpc-build
+mkdir discord-rpc-build
+tar -xzf %{SOURCE3} -C discord-rpc-build --strip-components=1
+pushd discord-rpc-build
 mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=%{_builddir}/duckstation-0.1-9483/deps \
     -DBUILD_SHARED_LIBS=OFF
 cmake --build . --config Release --target install
-# Return to the main source directory.
 popd
+rm -rf discord-rpc-build
 
-# Use sed to fix the SDL3 version requirement
-sed -i 's/find_package(SDL3 3.2.18/find_package(SDL3 3.2.16/' CMakeModules/DuckStationDependencies.cmake
-
-mkdir -p data/resources/
-cp %{SOURCE1} data/resources/cheats.zip
-cp %{SOURCE2} data/resources/patches.zip
+# Now unpack the main source.
+%setup -q -n duckstation-0.1-9483
 
 # Use sed to fix the SDL3 version requirement
 sed -i 's/find_package(SDL3 3.2.18/find_package(SDL3 3.2.16/' CMakeModules/DuckStationDependencies.cmake
