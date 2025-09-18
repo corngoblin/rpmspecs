@@ -12,9 +12,6 @@ Source0:        https://github.com/stenzek/duckstation/archive/refs/tags/v0.1-94
 Source1:        https://github.com/duckstation/chtdb/releases/download/latest/cheats.zip
 Source2:        https://github.com/duckstation/chtdb/releases/download/latest/patches.zip
 
-# Source for Discord RPC
-Source3:        https://github.com/discord/discord-rpc/archive/refs/tags/v3.4.0.tar.gz
-
 # Don't want extra flags producing a slower build than our other formats.
 %undefine _hardened_build
 %undefine _annotated_build
@@ -119,21 +116,6 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 "PlayStation" and "PSX" are registered trademarks of Sony Interactive Entertainment Europe Limited. This project is not affiliated in any way with Sony Interactive Entertainment.
 
 %prep
-# Manually unpack, build, and install the discord-rpc source.
-# Create a temporary directory for discord-rpc.
-rm -rf discord-rpc-build
-mkdir discord-rpc-build
-tar -xzf %{SOURCE3} -C discord-rpc-build --strip-components=1
-pushd discord-rpc-build
-mkdir build
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=%{_builddir}/duckstation-0.1-9483/deps \
-    -DBUILD_SHARED_LIBS=OFF
-cmake --build . --config Release --target install
-popd
-rm -rf discord-rpc-build
-
-# Now unpack the main source.
 %setup -q -n duckstation-0.1-9483
 
 # Use sed to fix the SDL3 version requirement
@@ -144,9 +126,12 @@ cp %{SOURCE1} data/resources/cheats.zip
 cp %{SOURCE2} data/resources/patches.zip
 
 %build
-if [ ! -d "${PWD}/deps" ]; then
-    scripts/deps/build-dependencies-linux.sh "${PWD}/deps"
-fi
+# The build-dependencies-linux.sh script is for building all dependencies, we only need a few.
+# It seems this script would have also built discord-rpc, but since we are removing that, we
+# will also remove this script call to ensure a clean build.
+# if [ ! -d "${PWD}/deps" ]; then
+#     scripts/deps/build-dependencies-linux.sh "${PWD}/deps"
+# fi
 
 rm -fr build
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
