@@ -77,6 +77,7 @@ BuildRequires: patch
 BuildRequires: pcre2-devel
 BuildRequires: perl-Digest-SHA
 BuildRequires: pipewire-devel
+BuildRequires: plutosvg-devel
 BuildRequires: pulseaudio-libs-devel
 BuildRequires: SDL3-devel
 BuildRequires: systemd-devel
