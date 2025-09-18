@@ -120,13 +120,16 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 
 %prep
 %setup -q -n duckstation-0.1-9483
-# Unpack and build discord-rpc from Source3 before proceeding.
+# Unpack Source3 into a separate directory.
 %setup -a 3 -q
-mkdir -p discord-rpc-3.4.0/build
-pushd discord-rpc-3.4.0/build
+# Navigate to the discord-rpc source directory, build, and install.
+pushd discord-rpc-3.4.0
+mkdir build
+cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=%{_builddir}/duckstation-0.1-9483/deps \
     -DBUILD_SHARED_LIBS=OFF
 cmake --build . --config Release --target install
+# Return to the main source directory.
 popd
 
 # Use sed to fix the SDL3 version requirement
