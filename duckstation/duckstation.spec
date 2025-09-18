@@ -120,6 +120,14 @@ DuckStation is an simulator/emulator of the Sony PlayStation(TM) console, focusi
 
 %prep
 %setup -q -n duckstation-0.1-9483
+# Unpack and build discord-rpc from Source3 before proceeding.
+%setup -a 3 -q
+mkdir -p discord-rpc-3.4.0/build
+pushd discord-rpc-3.4.0/build
+cmake .. -DCMAKE_INSTALL_PREFIX=%{_builddir}/duckstation-0.1-9483/deps \
+    -DBUILD_SHARED_LIBS=OFF
+cmake --build . --config Release --target install
+popd
 
 # Use sed to fix the SDL3 version requirement
 sed -i 's/find_package(SDL3 3.2.18/find_package(SDL3 3.2.16/' CMakeModules/DuckStationDependencies.cmake
@@ -128,34 +136,21 @@ mkdir -p data/resources/
 cp %{SOURCE1} data/resources/cheats.zip
 cp %{SOURCE2} data/resources/patches.zip
 
-# Build and install discord-rpc from source
-# Unpack the source tarball
-%setup -q -n discord-rpc-3.4.0
-mkdir build
-cd build
-# Configure, build, and install the library
-cmake .. -DCMAKE_INSTALL_PREFIX=%{_builddir}/duckstation-0.1-9483/deps \
-    -DBUILD_SHARED_LIBS=OFF
-cmake --build . --config Release --target install
-
-# Go back to the main source directory
-cd ..
-%setup -q -n duckstation-0.1-9483
-
 %build
 if [ ! -d "${PWD}/deps" ]; then
-  scripts/deps/build-dependencies-linux.sh "${PWD}/deps"
+    scripts/deps/build-dependencies-linux.sh "${PWD}/deps"
 fi
 
 rm -fr build
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1.9483/deps;/usr" \
+    -DCMAKE_PREFIX_PATH="%{_builddir}/duckstation-0.1-9483/deps;/usr" \
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
     -DCMAKE_EXE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_MODULE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_SHARED_LINKER_FLAGS_INIT="-fuse-ld=lld" \
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
     -DALLOW_INSTALL=ON -DINSTALL_SELF_CONTAINED=ON \
+    -DUSE_FBDEV=ON \
     -DCMAKE_INSTALL_PREFIX=%{buildroot}/opt/%{name}
 ninja -C build %{?_smp_mflags}
 
