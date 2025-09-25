@@ -102,9 +102,10 @@ rm -f %{buildroot}%{_datadir}/terminfo/g/ghostty
 %{_prefix}/share/vim/vimfiles/ftplugin/ghostty.vim
 %{_prefix}/share/vim/vimfiles/syntax/ghostty.vim
 %{_prefix}/share/zsh/site-functions/_ghostty
+%ifarch x86_64
 %{_includedir}/ghostty/vt.h
 %{_libdir}/libghostty-vt.so
 %{_libdir}/pkgconfig/libghostty-vt.pc
-
+%endif 
 %changelog
 %autochangelog
