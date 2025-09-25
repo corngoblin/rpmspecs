@@ -72,7 +72,6 @@ rm -f %{buildroot}%{_datadir}/terminfo/g/ghostty
 %{_bindir}/ghostty
 %{_prefix}/lib/systemd/user/app-com.mitchellh.ghostty.service
 %{_prefix}/share/dbus-1/services/com.mitchellh.ghostty.service
-%{_prefix}/share/dbus-1/services/com.mitchellh.ghostty.service
 %{_prefix}/share/applications/com.mitchellh.ghostty.desktop
 %{_prefix}/share/bash-completion/completions/ghostty.bash
 %{_prefix}/share/bat/syntaxes/ghostty.sublime-syntax
@@ -103,6 +102,9 @@ rm -f %{buildroot}%{_datadir}/terminfo/g/ghostty
 %{_prefix}/share/vim/vimfiles/ftplugin/ghostty.vim
 %{_prefix}/share/vim/vimfiles/syntax/ghostty.vim
 %{_prefix}/share/zsh/site-functions/_ghostty
+%{_includedir}/ghostty/vt.h
+%{_libdir}/libghostty-vt.so
+%{_libdir}/pkgconfig/libghostty-vt.pc
 
 %changelog
 %autochangelog
