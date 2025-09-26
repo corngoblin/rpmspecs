@@ -1,76 +1,73 @@
 Name:           woeusb-ng
 Version:        0.2.12
 Release:        1%{?dist}
-Summary:        Create a Windows USB stick installer from a real Windows DVD or image
-License:        GPLv3+
+Summary:        Tool to create a bootable Windows installer drive
+
+License:        GPL-3.0-or-later
 URL:            https://github.com/WoeUSB/WoeUSB-ng
-Source0:        https://github.com/WoeUSB/WoeUSB-ng/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/W/WoeUSB-ng/WoeUSB-ng-%{version}.tar.gz
 
 BuildArch:      noarch
 
-BuildRequires:  make
-BuildRequires:  polkit
+BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
-BuildRequires:  python3-distutils-extra
-BuildRequires:  fdupes
-Requires:       bash
-Requires:       dosfstools
-Requires:       gawk
-Requires:       grep
-Requires:       grub2-pc-modules
-Requires:       ntfs-3g
-Requires:       parted
-Requires:       wget
-Requires:       wimlib
-Requires:       wimlib-utils
-Requires:       polkit
+BuildRequires:  python3-termcolor
+BuildRequires:  python3-wxpython4
+BuildRequires:  ImageMagick
+BuildRequires:  potrace
+
+Requires:       python3-termcolor
 Requires:       python3-wxpython4
+Requires:       xdg-utils
+Requires:       p7zip
+
+Conflicts:      woeusb   # to avoid file overlap with old package
 
 %description
-A Linux program to create a Windows USB stick installer from a real Windows DVD or image.
-
-This package contains two programs:
-- woeusb: A command-line utility that enables you to create your own bootable
-          Windows installation USB storage device
-- woeusbgui: Graphical frontend for woeusb
-
-Supported images: Windows Vista, 7, 8.x, 10, 11.
-
-Supported boot modes:
-- Legacy BIOS (MBR)
-- UEFI (Windows 7+)
+WoeUSB-ng is a simple tool that enables you to create your own Windows installer
+USB drive from an ISO image or a real DVD. This is a Python rewrite of the
+original WoeUSB.
 
 %prep
 %autosetup -n WoeUSB-ng-%{version}
+# Ensure Python shebangs are consistent
+find . -type f -exec sed -i -e 's|/usr/bin/env python3|/usr/bin/python3|' {} \;
 
 %build
 %py3_build
 
 %install
+# Adjust install prefix
+sed -i -e 's|/usr/local/bin/woeusbgui|%{buildroot}%{_bindir}/woeusbgui|' setup.py
 %py3_install
 
-# Install icon and desktop integration
-install -D -m644 WoeUSB/data/woeusb-logo.png \
-    %{buildroot}%{_datadir}/pixmaps/%{name}.png
+# Generate SVG icon from bundled PNG
+convert WoeUSB/data/woeusb-logo.png WoeUSB/data/woeusb.svg
+install -Dm0644 WoeUSB/data/woeusb.svg \
+    %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/woeusb.svg
 
-install -D -m644 miscellaneous/WoeUSB-ng.desktop \
-    %{buildroot}%{_datadir}/applications/WoeUSB-ng.desktop
-
-install -D -m644 miscellaneous/com.github.woeusb.%{name}.policy \
-    %{buildroot}%{_datadir}/polkit-1/actions/com.github.woeusb.%{name}.policy
-
-%fdupes %{buildroot}%{python3_sitelib}
+# Install .desktop file 
+cat > %{buildroot}%{_datadir}/applications/woeusb-ng.desktop <<EOF
+[Desktop Entry]
+Name=WoeUSB-ng
+Comment=Windows installation drive creator
+Exec=woeusbgui
+Icon=woeusb
+Terminal=false
+Type=Application
+Categories=Utility;
+EOF
 
 %files
-%license COPYING
 %doc README.md
+%license LICENSE
 %{_bindir}/woeusb
 %{_bindir}/woeusbgui
-%{_datadir}/pixmaps/%{name}.png
-%{_datadir}/applications/WoeUSB-ng.desktop
-%{_datadir}/polkit-1/actions/com.github.woeusb.%{name}.policy
+%{_datadir}/applications/woeusb-ng.desktop
+%{_datadir}/icons/hicolor/scalable/apps/woeusb.svg
 %{python3_sitelib}/WoeUSB*
+%{python3_sitelib}/WoeUSB_ng-*.egg-info
 
 %changelog
-* Mon Aug 18 2025 Monkeygold 0.2.12-1
-- Initial build for Fedora COPR
+* Fri Sep 26 2025 - 0.2.12-1
+- Initial Fedora package
