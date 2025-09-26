@@ -1,5 +1,5 @@
 Name:           woeusb-ng
-Version:        0.2.12
+Version:        0.2.10
 Release:        1%{?dist}
 Summary:        Tool to create a bootable Windows installer drive
 
@@ -21,7 +21,9 @@ Requires:       python3-wxpython4
 Requires:       xdg-utils
 Requires:       p7zip
 
-Conflicts:      woeusb   # to avoid file overlap with old package
+# Old woeusb package ships binaries with the same names,
+# so this package conflicts with it
+Conflicts:      woeusb
 
 %description
 WoeUSB-ng is a simple tool that enables you to create your own Windows installer
@@ -46,7 +48,7 @@ convert WoeUSB/data/woeusb-logo.png WoeUSB/data/woeusb.svg
 install -Dm0644 WoeUSB/data/woeusb.svg \
     %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/woeusb.svg
 
-# Install .desktop file 
+# Install .desktop file
 cat > %{buildroot}%{_datadir}/applications/woeusb-ng.desktop <<EOF
 [Desktop Entry]
 Name=WoeUSB-ng
@@ -69,5 +71,5 @@ EOF
 %{python3_sitelib}/WoeUSB_ng-*.egg-info
 
 %changelog
-* Fri Sep 26 2025 - 0.2.12-1
+* Fri Sep 26 2025 Your Name <you@example.com> - 0.2.10-1
 - Initial Fedora package
