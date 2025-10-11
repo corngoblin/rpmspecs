@@ -1,10 +1,10 @@
 %global forgeurl https://github.com/ghostty-org/ghostty
-%global commit f8fa81293217b234b009341ec450bac9c09a6965
+%global commit c5ad7563f92656ec02bd08856b46431f2e222e69
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 %forgemeta
 
 Name:           ghostty-git
-Version:        1.1.4
+Version:        1.2.3
 Release:        %autorelease -s git%{shortcommit}
 Summary:        Fast, feature-rich, and cross-platform terminal emulator that uses platform-native UI and GPU acceleration
 License:        MIT
