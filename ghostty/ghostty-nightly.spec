@@ -27,7 +27,7 @@ BuildRequires:  pixman-devel
 BuildRequires:  pkg-config
 BuildRequires:  wayland-protocols-devel
 BuildRequires:  zlib-ng-devel
-# We use the official Zig nightly instead of Fedora’s packaged one.
+# Use official Zig v0.15.2 instead of Fedora package
 
 # --- Runtime Dependencies ---
 Requires:       fontconfig
@@ -50,12 +50,10 @@ Automatically includes the latest upstream commit hash for COPR versioning.
 
 %build
 # ------------------------------------------------------------
-# Download and use the latest Zig development binary
+# Download and use the Zig binary required by Ghostty
 # ------------------------------------------------------------
-ZIG_VERSION="0.16.0-dev"
-ZIG_BUILD_ID="747+493ad58ff"
-ZIG_URL="https://ziglang.org/builds/zig-x86_64-linux-${ZIG_VERSION}.${ZIG_BUILD_ID}.tar.xz"
-
+ZIG_VERSION="0.15.2"
+ZIG_URL="https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz"
 echo "Downloading Zig from $ZIG_URL"
 curl -sSL "$ZIG_URL" -o zig.tar.xz
 
@@ -85,7 +83,8 @@ rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %endif
 
 %install
-# Zig installs directly into %{buildroot}, nothing extra needed
+# Zig installs directly into %{buildroot} via --prefix
+# Nothing extra needed here
 
 %files
 %license LICENSE
@@ -128,5 +127,6 @@ rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %endif
 
 %changelog
+* Thu Oct 23 2025 Corngoblin <none@none> - 0.0~git%{shortcommit}-1
 - Nightly snapshot build from latest tip commit
-- Updated to Zig 0.16.0-dev.747+493ad58ff
+- Updated to Zig 0.15.2
