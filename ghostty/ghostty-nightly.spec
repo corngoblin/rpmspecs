@@ -11,6 +11,7 @@ Source0:        https://github.com/ghostty-org/ghostty/archive/refs/tags/tip.tar
 
 ExclusiveArch:  x86_64 aarch64
 
+# --- Build Dependencies ---
 BuildRequires:  blueprint-compiler
 BuildRequires:  fontconfig-devel
 BuildRequires:  freetype-devel
@@ -26,8 +27,9 @@ BuildRequires:  pixman-devel
 BuildRequires:  pkg-config
 BuildRequires:  wayland-protocols-devel
 BuildRequires:  zlib-ng-devel
-# Remove Fedora zig package — we’ll use the official one instead
+# We use the official Zig nightly instead of Fedora’s packaged one.
 
+# --- Runtime Dependencies ---
 Requires:       fontconfig
 Requires:       freetype
 Requires:       glib2
@@ -47,17 +49,27 @@ Automatically includes the latest upstream commit hash for COPR versioning.
 %setup -q -n ghostty-tip
 
 %build
-# Download and use the latest Zig development binary (needed for .zon import)
-ZIG_VERSION=0.14.0-dev
-ZIG_URL="https://ziglang.org/builds/zig-linux-x86_64-${ZIG_VERSION}.tar.xz"
+# ------------------------------------------------------------
+# Download and use the latest Zig development binary
+# ------------------------------------------------------------
+ZIG_VERSION="0.16.0-dev"
+ZIG_BUILD_ID="747+493ad58ff"
+ZIG_URL="https://ziglang.org/builds/zig-x86_64-linux-${ZIG_VERSION}.${ZIG_BUILD_ID}.tar.xz"
+
+echo "Downloading Zig from $ZIG_URL"
 curl -sSL "$ZIG_URL" -o zig.tar.xz
+
+echo "Extracting Zig..."
 tar -xf zig.tar.xz
-ZIGDIR=$(find . -maxdepth 1 -type d -name "zig-linux-*")
+ZIGDIR=$(find . -maxdepth 1 -type d -name "zig-*")
 export PATH="$PWD/$ZIGDIR:$PATH"
 
-# Verify zig version for logging
+echo "Using Zig version:"
 zig version
 
+# ------------------------------------------------------------
+# Build Ghostty using Zig
+# ------------------------------------------------------------
 DESTDIR=%{buildroot} zig build \
     --summary all \
     --prefix "%{_prefix}" \
@@ -68,13 +80,53 @@ DESTDIR=%{buildroot} zig build \
     -Demit-docs
 
 %if 0%{?fedora} >= 42
-    rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
+# Remove terminfo conflict on newer Fedora builds
+rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %endif
+
+%install
+# Zig installs directly into %{buildroot}, nothing extra needed
 
 %files
 %license LICENSE
 %{_bindir}/ghostty
-%{_prefix}/share/**
+%{_prefix}/share/applications/com.mitchellh.ghostty.desktop
+%{_prefix}/share/bash-completion/completions/ghostty.bash
+%{_prefix}/share/bat/syntaxes/ghostty.sublime-syntax
+%{_prefix}/share/fish/vendor_completions.d/ghostty.fish
+%{_prefix}/share/ghostty
+%{_prefix}/share/icons/hicolor/1024x1024/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/128x128/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/128x128@2/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/16x16/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/16x16@2/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/256x256/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/256x256@2/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/32x32/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/32x32@2/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor/512x512/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/kio/servicemenus/com.mitchellh.ghostty.desktop
+%{_prefix}/share/man/man1/ghostty.1
+%{_prefix}/share/man/man5/ghostty.5
+%{_prefix}/share/nautilus-python/extensions/ghostty.py
+%{_prefix}/share/nvim/site/compiler/ghostty.vim
+%{_prefix}/share/nvim/site/ftdetect/ghostty.vim
+%{_prefix}/share/nvim/site/ftplugin/ghostty.vim
+%{_prefix}/share/nvim/site/syntax/ghostty.vim
+%{_prefix}/share/vim/vimfiles/compiler/ghostty.vim
+%{_prefix}/share/vim/vimfiles/ftdetect/ghostty.vim
+%{_prefix}/share/vim/vimfiles/ftplugin/ghostty.vim
+%{_prefix}/share/vim/vimfiles/syntax/ghostty.vim
+%{_prefix}/share/zsh/site-functions/_ghostty
+%{_prefix}/share/dbus-1/services/com.mitchellh.ghostty.service
+%{_prefix}/share/locale/*/LC_MESSAGES/com.mitchellh.ghostty.mo
+%{_prefix}/share/metainfo/com.mitchellh.ghostty.metainfo.xml
+%{_prefix}/share/systemd/user/app-com.mitchellh.ghostty.service
+%{_prefix}/share/terminfo/x/xterm-ghostty
+%if 0%{?fedora} < 42
+    %{_prefix}/share/terminfo/g/ghostty
+%endif
 
 %changelog
-* Thu Oct 24 2025 corngoblin - nightly
+- Nightly snapshot build from latest tip commit
+- Updated to Zig 0.16.0-dev.747+493ad58ff
