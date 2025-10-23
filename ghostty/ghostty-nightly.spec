@@ -1,13 +1,13 @@
-Name: ghostty-nightly
-%global commit %(curl -sL https://api.github.com/repos/ghostty-org/ghostty/git/ref/tags/tip | grep '"sha"' | head -1 | cut -d '"' -f 4)
-%global shortcommit %(echo %{commit} | cut -c1-7)
-Version: 0.0~git%{shortcommit}
-Release: 1%{?dist}
-Summary: Fast, feature-rich, and cross-platform terminal emulator that uses platform-native UI and GPU acceleration
+Name:           ghostty-nightly
+%global tipcommit %(curl -sL https://api.github.com/repos/ghostty-org/ghostty/git/ref/tags/tip | grep '"sha"' | head -1 | cut -d '"' -f 4)
+%global shortcommit %(echo %{tipcommit} | cut -c1-7)
+Version:        0.0~git%{shortcommit}
+Release:        1%{?dist}
+Summary:        Nightly build of Ghostty terminal emulator
 
 License:        MIT
 URL:            https://github.com/ghostty-org/ghostty
-Source0:        https://github.com/ghostty-org/ghostty/archive/%{commit}/ghostty-%{shortcommit}.tar.gz
+Source0:        https://github.com/ghostty-org/ghostty/archive/refs/tags/tip.tar.gz
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -25,8 +25,8 @@ BuildRequires:  pandoc-cli
 BuildRequires:  pixman-devel
 BuildRequires:  pkg-config
 BuildRequires:  wayland-protocols-devel
-BuildRequires:  zig
 BuildRequires:  zlib-ng-devel
+# Remove Fedora zig package — we’ll use the official one instead
 
 Requires:       fontconfig
 Requires:       freetype
@@ -40,12 +40,24 @@ Requires:       pixman
 Requires:       zlib-ng
 
 %description
-%{summary}.
+Nightly (tip) build of Ghostty terminal emulator.
+Automatically includes the latest upstream commit hash for COPR versioning.
 
 %prep
-%setup -q -n ghostty-%{commit}
+%setup -q -n ghostty-tip
 
 %build
+# Download and use the latest Zig development binary (needed for .zon import)
+ZIG_VERSION=0.14.0-dev
+ZIG_URL="https://ziglang.org/builds/zig-linux-x86_64-${ZIG_VERSION}.tar.xz"
+curl -sSL "$ZIG_URL" -o zig.tar.xz
+tar -xf zig.tar.xz
+ZIGDIR=$(find . -maxdepth 1 -type d -name "zig-linux-*")
+export PATH="$PWD/$ZIGDIR:$PATH"
+
+# Verify zig version for logging
+zig version
+
 DESTDIR=%{buildroot} zig build \
     --summary all \
     --prefix "%{_prefix}" \
@@ -62,27 +74,8 @@ DESTDIR=%{buildroot} zig build \
 %files
 %license LICENSE
 %{_bindir}/ghostty
-%{_prefix}/share/applications/com.mitchellh.ghostty.desktop
-%{_prefix}/share/bash-completion/completions/ghostty.bash
-%{_prefix}/share/bat/syntaxes/ghostty.sublime-syntax
-%{_prefix}/share/fish/vendor_completions.d/ghostty.fish
-%{_prefix}/share/ghostty
-%{_prefix}/share/icons/hicolor/*/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/kio/servicemenus/com.mitchellh.ghostty.desktop
-%{_prefix}/share/man/man1/ghostty.1
-%{_prefix}/share/man/man5/ghostty.5
-%{_prefix}/share/nautilus-python/extensions/ghostty.py
-%{_prefix}/share/nvim/site/**/ghostty.vim
-%{_prefix}/share/vim/vimfiles/**/ghostty.vim
-%{_prefix}/share/zsh/site-functions/_ghostty
-%{_prefix}/share/dbus-1/services/com.mitchellh.ghostty.service
-%{_prefix}/share/locale/*/LC_MESSAGES/com.mitchellh.ghostty.mo
-%{_prefix}/share/metainfo/com.mitchellh.ghostty.metainfo.xml
-%{_prefix}/share/systemd/user/app-com.mitchellh.ghostty.service
-%{_prefix}/share/terminfo/x/xterm-ghostty
-%if 0%{?fedora} < 42
-    %{_prefix}/share/terminfo/g/ghostty
-%endif
+%{_prefix}/share/**
 
 %changelog
-* Thu Oct 23 2025 corngoblin - nightly
+* Thu Oct 24 2025 You <you@example.com> - 0.0~git%{shortcommit}-1
+- Nightly build from Ghostty “tip” (%{tipcommit}) using Zig 0.14.0-dev
