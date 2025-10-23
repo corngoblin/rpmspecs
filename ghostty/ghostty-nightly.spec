@@ -50,7 +50,7 @@ Automatically includes the latest upstream commit hash for COPR versioning.
 %setup -q -n ghostty-%{tipcommit}
 
 %build
-# --- Download and prepare Zig ---
+# Download Zig
 ZIG_VERSION="0.15.2"
 ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
 
@@ -59,23 +59,69 @@ tar -xf zig.tar.xz
 ZIGDIR=$(find . -maxdepth 1 -type d -name "zig-*")
 export PATH="$PWD/$ZIGDIR:$PATH"
 
-# --- Build Ghostty and install to buildroot ---
+# Build Ghostty
 zig build \
-    --prefix="%{buildroot}%{_prefix}" \
     -Dversion-string=0.0.0-nightly.%{shortcommit}-%{release} \
     -Doptimize=ReleaseFast \
     -Dcpu=baseline \
     -Dpie=true \
-    -Demit-docs \
-    install
-
-%if 0%{?fedora} >= 42
-rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
-%endif
+    -Demit-docs
 
 %install
-# Nothing needed here; files already installed by Zig
-:
+rm -rf %{buildroot}
+
+# --- Binary ---
+mkdir -p %{buildroot}%{_bindir}
+cp zig-out/bin/ghostty %{buildroot}%{_bindir}/
+
+# --- Assets, icons, desktop files, completions, etc. ---
+mkdir -p %{buildroot}%{_prefix}/share/ghostty
+cp -r assets/ghostty %{buildroot}%{_prefix}/share/ghostty
+
+mkdir -p %{buildroot}%{_prefix}/share/icons/hicolor
+cp -r assets/icons/* %{buildroot}%{_prefix}/share/icons/hicolor/
+
+mkdir -p %{buildroot}%{_prefix}/share/applications
+cp desktop/com.mitchellh.ghostty.desktop %{buildroot}%{_prefix}/share/applications/
+
+mkdir -p %{buildroot}%{_prefix}/share/bash-completion/completions
+cp completions/ghostty.bash %{buildroot}%{_prefix}/share/bash-completion/completions/
+
+mkdir -p %{buildroot}%{_prefix}/share/fish/vendor_completions.d
+cp completions/ghostty.fish %{buildroot}%{_prefix}/share/fish/vendor_completions.d/
+
+# Vim/Nvim/Zsh
+mkdir -p %{buildroot}%{_prefix}/share/nvim/site/{compiler,ftdetect,ftplugin,syntax}
+cp nvim/*.vim %{buildroot}%{_prefix}/share/nvim/site/
+
+mkdir -p %{buildroot}%{_prefix}/share/vim/vimfiles/{compiler,ftdetect,ftplugin,syntax}
+cp vim/*.vim %{buildroot}%{_prefix}/share/vim/vimfiles/
+
+mkdir -p %{buildroot}%{_prefix}/share/zsh/site-functions
+cp completions/_ghostty %{buildroot}%{_prefix}/share/zsh/site-functions/
+
+# D-Bus, systemd, metainfo, locale
+mkdir -p %{buildroot}%{_prefix}/share/dbus-1/services
+cp dbus/com.mitchellh.ghostty.service %{buildroot}%{_prefix}/share/dbus-1/services/
+
+mkdir -p %{buildroot}%{_prefix}/share/systemd/user
+cp systemd/app-com.mitchellh.ghostty.service %{buildroot}%{_prefix}/share/systemd/user/
+
+mkdir -p %{buildroot}%{_prefix}/share/metainfo
+cp metainfo/com.mitchellh.ghostty.metainfo.xml %{buildroot}%{_prefix}/share/metainfo/
+
+mkdir -p %{buildroot}%{_prefix}/share/locale
+cp -r locale/* %{buildroot}%{_prefix}/share/locale/
+
+# Terminfo
+mkdir -p %{buildroot}%{_prefix}/share/terminfo/x
+cp terminfo/xterm-ghostty %{buildroot}%{_prefix}/share/terminfo/x/
+
+%if 0%{?fedora} < 42
+mkdir -p %{buildroot}%{_prefix}/share/terminfo/g
+cp terminfo/ghostty %{buildroot}%{_prefix}/share/terminfo/g/
+%endif
+
 
 %files
 %license LICENSE
