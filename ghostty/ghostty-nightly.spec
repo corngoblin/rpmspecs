@@ -77,5 +77,4 @@ DESTDIR=%{buildroot} zig build \
 %{_prefix}/share/**
 
 %changelog
-* Thu Oct 24 2025 You <you@example.com> - 0.0~git%{shortcommit}-1
-- Nightly build from Ghostty “tip” (%{tipcommit}) using Zig 0.14.0-dev
+* Thu Oct 24 2025 corngoblin - nightly
