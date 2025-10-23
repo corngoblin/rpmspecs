@@ -9,80 +9,69 @@ License:        MIT
 URL:            https://github.com/ghostty-org/ghostty
 Source0:        https://github.com/ghostty-org/ghostty/archive/%{tipcommit}.tar.gz
 
-ExclusiveArch:  x86_64 aarch64
 
-# --- Build Dependencies ---
-BuildRequires:  blueprint-compiler
-BuildRequires:  fontconfig-devel
-BuildRequires:  freetype-devel
-BuildRequires:  glib2-devel
-BuildRequires:  gtk4-devel
-BuildRequires:  gtk4-layer-shell-devel
-BuildRequires:  harfbuzz-devel
-BuildRequires:  libadwaita-devel
-BuildRequires:  libpng-devel
-BuildRequires:  oniguruma-devel
-BuildRequires:  pandoc-cli
-BuildRequires:  pixman-devel
-BuildRequires:  pkg-config
-BuildRequires:  wayland-protocols-devel
-BuildRequires:  zlib-ng-devel
-BuildRequires:  curl
-BuildRequires:  tar
+ExclusiveArch: x86_64 aarch64
 
-# --- Runtime Dependencies ---
-Requires:       fontconfig
-Requires:       freetype
-Requires:       glib2
-Requires:       gtk4
-Requires:       harfbuzz
-Requires:       libadwaita
-Requires:       libpng
-Requires:       oniguruma
-Requires:       pixman
-Requires:       zlib-ng
+
+BuildRequires: blueprint-compiler
+BuildRequires: fontconfig-devel
+BuildRequires: freetype-devel
+BuildRequires: glib2-devel
+BuildRequires: gtk4-devel
+BuildRequires: gtk4-layer-shell-devel
+BuildRequires: harfbuzz-devel
+BuildRequires: libadwaita-devel
+BuildRequires: libpng-devel
+BuildRequires: oniguruma-devel
+BuildRequires: pandoc-cli
+BuildRequires: pixman-devel
+BuildRequires: pkg-config
+BuildRequires: wayland-protocols-devel
+BuildRequires: zig
+BuildRequires: zlib-ng-devel
+
+
+Requires: fontconfig
+Requires: freetype
+Requires: glib2
+Requires: gtk4
+Requires: harfbuzz
+Requires: libadwaita
+Requires: libpng
+Requires: oniguruma
+Requires: pixman
+Requires: zlib-ng
+
 
 %description
-Nightly (tip) build of Ghostty terminal emulator.
-Automatically includes the latest upstream commit hash for COPR versioning.
+%{summary}.
+
 
 %prep
-%setup -q -n ghostty-%{tipcommit}
+%setup -q -n ghostty-%{version}
+
 
 %build
-# --- Download and prepare Zig ---
 ZIG_VERSION="0.15.2"
-ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
+ZIG_URL="https://ziglang.org/download/0.15.2/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
 
-echo "Downloading Zig from $ZIG_URL"
 curl -sSL "$ZIG_URL" -o zig.tar.xz
-
-echo "Extracting Zig..."
 tar -xf zig.tar.xz
 ZIGDIR=$(find . -maxdepth 1 -type d -name "zig-*")
 export PATH="$PWD/$ZIGDIR:$PATH"
 
-echo "Using Zig version:"
-zig version
-
-# --- Build Ghostty ---
-zig build \
-    --prefix="%{buildroot}%{_prefix}" \
-    -Dversion-string=0.0.0-nightly.%{shortcommit}-%{release} \
+DESTDIR=%{buildroot} zig build \
+    --summary all \
+    --prefix "%{_prefix}" \
+    -Dversion-string=%{version}-%{release} \
     -Doptimize=ReleaseFast \
     -Dcpu=baseline \
     -Dpie=true \
-    -Demit-docs \
-    install
+    -Demit-docs
 
-# Remove old terminfo for Fedora >= 42
 %if 0%{?fedora} >= 42
-rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
+    rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %endif
-
-%install
-# Everything installed by Zig directly into %{buildroot}, no extra steps needed
-:
 
 %files
 %license LICENSE
@@ -119,11 +108,11 @@ rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %{_prefix}/share/locale/*/LC_MESSAGES/com.mitchellh.ghostty.mo
 %{_prefix}/share/metainfo/com.mitchellh.ghostty.metainfo.xml
 %{_prefix}/share/systemd/user/app-com.mitchellh.ghostty.service
+
 %{_prefix}/share/terminfo/x/xterm-ghostty
 %if 0%{?fedora} < 42
-%{_prefix}/share/terminfo/g/ghostty
+    %{_prefix}/share/terminfo/g/ghostty
 %endif
 
 %changelog
-- Nightly snapshot build from latest tip commit
-- Updated to Zig 0.15.2
+%autochangelog
