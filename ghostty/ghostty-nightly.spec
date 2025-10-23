@@ -1,5 +1,5 @@
 Name:           ghostty-nightly
-%global tipcommit %(curl -sL https://api.github.com/repos/ghostty-org/ghostty/git/ref/tags/tip | grep '"sha"' | head -1 | cut -d '"' -f 4)
+%global tipcommit %(curl -sL https://api.github.com/repos/ghostty-org/ghostty/commits/main | grep '"sha"' | head -1 | cut -d '"' -f 4)
 %global shortcommit %(echo %{tipcommit} | cut -c1-7)
 Version:        0.0~git%{shortcommit}
 Release:        1%{?dist}
@@ -7,7 +7,7 @@ Summary:        Nightly build of Ghostty terminal emulator
 
 License:        MIT
 URL:            https://github.com/ghostty-org/ghostty
-Source0:        https://github.com/ghostty-org/ghostty/archive/refs/tags/tip.tar.gz
+Source0:        https://github.com/ghostty-org/ghostty/archive/%{tipcommit}.tar.gz
 
 ExclusiveArch:  x86_64 aarch64
 
@@ -27,7 +27,6 @@ BuildRequires:  pixman-devel
 BuildRequires:  pkg-config
 BuildRequires:  wayland-protocols-devel
 BuildRequires:  zlib-ng-devel
-# We use the official Zig nightly instead of Fedora's packaged one
 
 # --- Runtime Dependencies ---
 Requires:       fontconfig
@@ -46,12 +45,9 @@ Nightly (tip) build of Ghostty terminal emulator.
 Automatically includes the latest upstream commit hash for COPR versioning.
 
 %prep
-%setup -q -n ghostty-tip
+%setup -q -n ghostty-%{tipcommit}
 
 %build
-# ------------------------------------------------------------
-# Download and use Zig 0.15.2 (required by Ghostty)
-# ------------------------------------------------------------
 ZIG_VERSION="0.15.2"
 ZIG_URL="https://ziglang.org/download/0.15.2/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
 
@@ -66,9 +62,6 @@ export PATH="$PWD/$ZIGDIR:$PATH"
 echo "Using Zig version:"
 zig version
 
-# ------------------------------------------------------------
-# Build Ghostty using Zig with a semantic-version compatible string
-# ------------------------------------------------------------
 DESTDIR=%{buildroot} zig build \
     --summary all \
     --prefix "%{_prefix}" \
@@ -79,13 +72,11 @@ DESTDIR=%{buildroot} zig build \
     -Demit-docs
 
 %if 0%{?fedora} >= 42
-# Remove terminfo conflict on newer Fedora builds
 rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %endif
 
 %install
-# Zig handles installation into %{buildroot} directly via --prefix
-# Nothing extra needed here
+# Zig installs directly into %{buildroot}, no extra steps needed
 
 %files
 %license LICENSE
@@ -128,6 +119,5 @@ rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %endif
 
 %changelog
-* Thu Oct 24 2025 Corngoblin <you@example.com> - 0.0~git%{shortcommit}-1
 - Nightly snapshot build from latest tip commit
 - Updated to Zig 0.15.2
