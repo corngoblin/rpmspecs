@@ -27,7 +27,7 @@ BuildRequires:  pixman-devel
 BuildRequires:  pkg-config
 BuildRequires:  wayland-protocols-devel
 BuildRequires:  zlib-ng-devel
-# Use official Zig v0.15.2 instead of Fedora package
+# We use the official Zig nightly instead of Fedora's packaged one
 
 # --- Runtime Dependencies ---
 Requires:       fontconfig
@@ -50,10 +50,11 @@ Automatically includes the latest upstream commit hash for COPR versioning.
 
 %build
 # ------------------------------------------------------------
-# Download and use the Zig binary required by Ghostty
+# Download and use Zig 0.15.2 (required by Ghostty)
 # ------------------------------------------------------------
 ZIG_VERSION="0.15.2"
-ZIG_URL="https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz"
+ZIG_URL="https://ziglang.org/download/0.15.2/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
+
 echo "Downloading Zig from $ZIG_URL"
 curl -sSL "$ZIG_URL" -o zig.tar.xz
 
@@ -66,12 +67,12 @@ echo "Using Zig version:"
 zig version
 
 # ------------------------------------------------------------
-# Build Ghostty using Zig
+# Build Ghostty using Zig with a semantic-version compatible string
 # ------------------------------------------------------------
 DESTDIR=%{buildroot} zig build \
     --summary all \
     --prefix "%{_prefix}" \
-    -Dversion-string=nightly-%{shortcommit}-%{release} \
+    -Dversion-string=0.0.0-nightly.%{shortcommit}-%{release} \
     -Doptimize=ReleaseFast \
     -Dcpu=baseline \
     -Dpie=true \
@@ -83,7 +84,7 @@ rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %endif
 
 %install
-# Zig installs directly into %{buildroot} via --prefix
+# Zig handles installation into %{buildroot} directly via --prefix
 # Nothing extra needed here
 
 %files
@@ -123,10 +124,10 @@ rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %{_prefix}/share/systemd/user/app-com.mitchellh.ghostty.service
 %{_prefix}/share/terminfo/x/xterm-ghostty
 %if 0%{?fedora} < 42
-    %{_prefix}/share/terminfo/g/ghostty
+%{_prefix}/share/terminfo/g/ghostty
 %endif
 
 %changelog
-* Thu Oct 23 2025 Corngoblin <none@none> - 0.0~git%{shortcommit}-1
+* Thu Oct 24 2025 Corngoblin <you@example.com> - 0.0~git%{shortcommit}-1
 - Nightly snapshot build from latest tip commit
 - Updated to Zig 0.15.2
