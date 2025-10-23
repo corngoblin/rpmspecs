@@ -51,16 +51,10 @@ Automatically includes the latest upstream commit hash for COPR versioning.
 ZIG_VERSION="0.15.2"
 ZIG_URL="https://ziglang.org/download/0.15.2/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
 
-echo "Downloading Zig from $ZIG_URL"
 curl -sSL "$ZIG_URL" -o zig.tar.xz
-
-echo "Extracting Zig..."
 tar -xf zig.tar.xz
 ZIGDIR=$(find . -maxdepth 1 -type d -name "zig-*")
 export PATH="$PWD/$ZIGDIR:$PATH"
-
-echo "Using Zig version:"
-zig version
 
 DESTDIR=%{buildroot} zig build \
     --summary all \
@@ -76,7 +70,71 @@ rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %endif
 
 %install
-# Zig installs directly into %{buildroot}, no extra steps needed
+rm -rf %{buildroot}
+
+# --- Binary ---
+mkdir -p %{buildroot}%{_bindir}
+cp zig-out/bin/ghostty %{buildroot}%{_bindir}/ghostty
+
+# --- Desktop files ---
+mkdir -p %{buildroot}%{_prefix}/share/applications
+cp desktop/com.mitchellh.ghostty.desktop %{buildroot}%{_prefix}/share/applications/
+
+# --- Shell completions ---
+mkdir -p %{buildroot}%{_prefix}/share/bash-completion/completions
+cp completions/ghostty.bash %{buildroot}%{_prefix}/share/bash-completion/completions/
+
+mkdir -p %{buildroot}%{_prefix}/share/fish/vendor_completions.d
+cp completions/ghostty.fish %{buildroot}%{_prefix}/share/fish/vendor_completions.d/
+
+# --- Syntax highlighting ---
+mkdir -p %{buildroot}%{_prefix}/share/bat/syntaxes
+cp syntax/ghostty.sublime-syntax %{buildroot}%{_prefix}/share/bat/syntaxes/
+
+# --- Ghostty assets directory ---
+cp -r assets/ghostty %{buildroot}%{_prefix}/share/ghostty
+
+# --- Icons ---
+mkdir -p %{buildroot}%{_prefix}/share/icons/hicolor
+cp -r assets/icons/* %{buildroot}%{_prefix}/share/icons/hicolor/
+
+# --- KIO, Nautilus, Vim, Neovim, Zsh files ---
+mkdir -p %{buildroot}%{_prefix}/share/kio/servicemenus
+cp desktop/com.mitchellh.ghostty.desktop %{buildroot}%{_prefix}/share/kio/servicemenus/
+
+mkdir -p %{buildroot}%{_prefix}/share/nautilus-python/extensions
+cp extensions/ghostty.py %{buildroot}%{_prefix}/share/nautilus-python/extensions/
+
+mkdir -p %{buildroot}%{_prefix}/share/nvim/site/{compiler,ftdetect,ftplugin,syntax}
+cp nvim/*.vim %{buildroot}%{_prefix}/share/nvim/site/
+
+mkdir -p %{buildroot}%{_prefix}/share/vim/vimfiles/{compiler,ftdetect,ftplugin,syntax}
+cp vim/*.vim %{buildroot}%{_prefix}/share/vim/vimfiles/
+
+mkdir -p %{buildroot}%{_prefix}/share/zsh/site-functions
+cp completions/_ghostty %{buildroot}%{_prefix}/share/zsh/site-functions/
+
+# --- D-Bus, systemd, locale, metainfo ---
+mkdir -p %{buildroot}%{_prefix}/share/dbus-1/services
+cp dbus/com.mitchellh.ghostty.service %{buildroot}%{_prefix}/share/dbus-1/services/
+
+mkdir -p %{buildroot}%{_prefix}/share/systemd/user
+cp systemd/app-com.mitchellh.ghostty.service %{buildroot}%{_prefix}/share/systemd/user/
+
+mkdir -p %{buildroot}%{_prefix}/share/metainfo
+cp metainfo/com.mitchellh.ghostty.metainfo.xml %{buildroot}%{_prefix}/share/metainfo/
+
+mkdir -p %{buildroot}%{_prefix}/share/locale
+cp -r locale/* %{buildroot}%{_prefix}/share/locale/
+
+# --- Terminfo ---
+mkdir -p %{buildroot}%{_prefix}/share/terminfo/x
+cp terminfo/xterm-ghostty %{buildroot}%{_prefix}/share/terminfo/x/
+
+%if 0%{?fedora} < 42
+mkdir -p %{buildroot}%{_prefix}/share/terminfo/g
+cp terminfo/ghostty %{buildroot}%{_prefix}/share/terminfo/g/
+%endif
 
 %files
 %license LICENSE
@@ -86,31 +144,16 @@ rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 %{_prefix}/share/bat/syntaxes/ghostty.sublime-syntax
 %{_prefix}/share/fish/vendor_completions.d/ghostty.fish
 %{_prefix}/share/ghostty
-%{_prefix}/share/icons/hicolor/1024x1024/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/128x128/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/128x128@2/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/16x16/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/16x16@2/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/256x256/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/256x256@2/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/32x32/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/32x32@2/apps/com.mitchellh.ghostty.png
-%{_prefix}/share/icons/hicolor/512x512/apps/com.mitchellh.ghostty.png
+%{_prefix}/share/icons/hicolor
 %{_prefix}/share/kio/servicemenus/com.mitchellh.ghostty.desktop
 %{_prefix}/share/man/man1/ghostty.1
 %{_prefix}/share/man/man5/ghostty.5
 %{_prefix}/share/nautilus-python/extensions/ghostty.py
-%{_prefix}/share/nvim/site/compiler/ghostty.vim
-%{_prefix}/share/nvim/site/ftdetect/ghostty.vim
-%{_prefix}/share/nvim/site/ftplugin/ghostty.vim
-%{_prefix}/share/nvim/site/syntax/ghostty.vim
-%{_prefix}/share/vim/vimfiles/compiler/ghostty.vim
-%{_prefix}/share/vim/vimfiles/ftdetect/ghostty.vim
-%{_prefix}/share/vim/vimfiles/ftplugin/ghostty.vim
-%{_prefix}/share/vim/vimfiles/syntax/ghostty.vim
+%{_prefix}/share/nvim/site
+%{_prefix}/share/vim/vimfiles
 %{_prefix}/share/zsh/site-functions/_ghostty
 %{_prefix}/share/dbus-1/services/com.mitchellh.ghostty.service
-%{_prefix}/share/locale/*/LC_MESSAGES/com.mitchellh.ghostty.mo
+%{_prefix}/share/locale
 %{_prefix}/share/metainfo/com.mitchellh.ghostty.metainfo.xml
 %{_prefix}/share/systemd/user/app-com.mitchellh.ghostty.service
 %{_prefix}/share/terminfo/x/xterm-ghostty
