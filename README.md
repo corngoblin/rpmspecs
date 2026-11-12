@@ -38,14 +38,13 @@ LICENSING.md            licensing notes, including what we cannot ship
 | `packages/topgrade` | topgrade | [topgrade-rs/topgrade](https://github.com/topgrade-rs/topgrade) | 16.0.4 | `topgrade` |
 | `packages/twad` | twad | [twad-rs/twad](https://github.com/twad-rs/twad) | 0.30.0 | `twad` — never built, see below |
 | `packages/woeusb-ng` | woeusb-ng | [WoeUSB/WoeUSB-ng](https://github.com/WoeUSB/WoeUSB-ng) | 0.2.10 | `woeusb-ng` — never built, see below |
-| `packages/copyparty` | copyparty | [9001/copyparty](https://github.com/9001/copyparty) | 1.19.1 | not published |
 | `packages/sunshine` | sunshine | [LizardByte/Sunshine](https://github.com/LizardByte/Sunshine) | 2025.628.4510 | not published |
 | `packages/ymir` | ymir | [StrikerX3/Ymir](https://github.com/StrikerX3/Ymir) | 0.1.7 | not published |
-| `packages/kernel` | kernel | vanilla kernel.org | 6.15.10 | local build only |
 
-`archive/` holds `gzdoom` (superseded by `uzdoom`), the old `ghostty-nightly`
-spec (it resolved its commit with a `curl` at spec-parse time) and nothing else.
-The DuckStation spec was removed rather than archived — see `LICENSING.md`.
+`archive/` holds `gzdoom` only — superseded by `uzdoom`, patches kept for
+reference. The DuckStation and ghostty-nightly specs were removed rather than
+archived: the first is a licence issue (see `LICENSING.md`), the second resolved
+its commit with a `curl` at spec-parse time.
 
 ## Building
 
@@ -73,5 +72,5 @@ copr-cli build-package monkeygold/Emporium --name uzdoom
   build**: `twad` fetches Go modules at build time without vendoring, and
   `woeusb-ng` points `Source0` at a tarball that is not in the repository.
 - `ymir` has no usable `Source0` and is not published.
-- `copyparty`, `sunshine`, `ymir` and `kernel` are not part of Emporium's build
-  set; they live here because this is where packaging belongs.
+- `sunshine` and `ymir` are not part of Emporium's build set; they live here
+  because this is where packaging belongs.
