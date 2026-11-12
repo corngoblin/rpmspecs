@@ -108,18 +108,32 @@ zig version
 # %install section: rpm wipes %{buildroot} at the start of %install, and a second
 # zig run over the same tree leaves its install staging cache behind for rpm's
 # strip steps to abort on. This is the layout the working 1.4.0 specs use.
-DESTDIR=%{buildroot} zig build \
-    --summary all \
-    --prefix "%{_prefix}" \
-    -fsys=fontconfig \
-    -fsys=freetype \
-    -fsys=harfbuzz \
-    -Dversion-string=%{version}-%{release} \
-    -Doptimize=ReleaseFast \
-    -Dcpu=baseline \
-    -Dpie=true \
-    -Dstrip=false \
-    -Demit-docs
+# Zig fetches the hash-pinned dependencies listed in build.zig.zon from
+# deps.files.ghostty.org during the build, and a single reset connection aborts
+# the whole thing. Downloaded packages stay in Zig's global cache, so a retry
+# resumes instead of starting over.
+zig_rc=1
+for attempt in 1 2 3; do
+    if DESTDIR=%{buildroot} zig build \
+        --summary all \
+        --prefix "%{_prefix}" \
+        -fsys=fontconfig \
+        -fsys=freetype \
+        -fsys=harfbuzz \
+        -Dversion-string=%{version}-%{release} \
+        -Doptimize=ReleaseFast \
+        -Dcpu=baseline \
+        -Dpie=true \
+        -Dstrip=false \
+        -Demit-docs
+    then
+        zig_rc=0
+        break
+    fi
+    echo "ghostty: zig build failed (attempt ${attempt}/3), retrying"
+    sleep 20
+done
+[ "${zig_rc}" -eq 0 ] || exit 1
 
 # Ghostty 1.4.0 records DESTDIR in the pkg-config prefix; rpm's check-buildroot
 # aborts on the buildroot path if it is left there.
