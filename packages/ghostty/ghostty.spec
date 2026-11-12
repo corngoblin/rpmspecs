@@ -104,8 +104,10 @@ zig version
 # executable wins global symbol resolution: GTK's calls land in the vendored
 # copies while operating on system-library state.
 #
-# One zig invocation, with DESTDIR set here: a second install pass leaves Zig's
-# staging cache behind for rpm's strip steps to trip over.
+# Everything happens here, in ONE zig invocation, and there is deliberately no
+# %install section: rpm wipes %{buildroot} at the start of %install, and a second
+# zig run over the same tree leaves its install staging cache behind for rpm's
+# strip steps to abort on. This is the layout the working 1.4.0 specs use.
 DESTDIR=%{buildroot} zig build \
     --summary all \
     --prefix "%{_prefix}" \
@@ -119,9 +121,8 @@ DESTDIR=%{buildroot} zig build \
     -Dstrip=false \
     -Demit-docs
 
-
-%install
-# Ghostty 1.4.0 records DESTDIR in the pkg-config prefix.
+# Ghostty 1.4.0 records DESTDIR in the pkg-config prefix; rpm's check-buildroot
+# aborts on the buildroot path if it is left there.
 sed -i 's|^prefix=.*|prefix=%{_prefix}|' \
     "%{buildroot}%{_prefix}/share/pkgconfig/libghostty-vt.pc" \
     "%{buildroot}%{_prefix}/share/pkgconfig/libghostty-vt-static.pc"
