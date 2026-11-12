@@ -13,15 +13,11 @@ Source0:        https://release.files.ghostty.org/%{version}/%{name}-%{version}.
 # ship Zig 0.16, so the official upstream toolchain release is used instead of
 # the distribution package. Bump this together with Version.
 %global zigver 0.17.0
-# Both toolchains are declared unconditionally: COPR builds the SRPM per chroot,
-# and a Source guarded by %%ifarch is missing from the SRPM of the other arch
-# ("Bad file: .../zig-x86_64-linux-0.17.0.tar.xz: No such file or directory").
-# %%prep extracts only the one matching the build architecture.
 Source1:        https://ziglang.org/download/%{zigver}/zig-x86_64-linux-%{zigver}.tar.xz
-Source2:        https://ziglang.org/download/%{zigver}/zig-aarch64-linux-%{zigver}.tar.xz
 
 
-ExclusiveArch:  x86_64 aarch64
+# Emporium builds x86_64 only.
+ExclusiveArch:  x86_64
 
 # Ghostty 1.4.0 installs libghostty-vt as a shared object, and Zig links ELF
 # shared libraries without a GNU build-id. find-debuginfo aborts on that
@@ -84,14 +80,8 @@ libghostty-vt, the VT parsing core that Ghostty ships as a C library.
 %prep
 %setup -q -n %{name}-%{version}
 
-%ifarch x86_64
 tar xf %{SOURCE1}
 mv zig-x86_64-linux-%{zigver} zig-toolchain
-%endif
-%ifarch aarch64
-tar xf %{SOURCE2}
-mv zig-aarch64-linux-%{zigver} zig-toolchain
-%endif
 
 
 %build

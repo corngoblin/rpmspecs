@@ -10,7 +10,7 @@ They are maintained here now, and this repository is the source of truth — COP
 builds each package straight from a directory below (`packages/<name>/`), so a
 change lands here before it reaches anyone's package manager.
 
-Builds target **Fedora 44 and Fedora 45** only, `x86_64` and `aarch64`.
+Builds target **Fedora 44 and Fedora 45**, `x86_64` only.
 
 ## Layout
 
