@@ -1,0 +1,5 @@
+# build trees and artifacts never belong in the repo
+.rpmbuild/
+*.rpm
+*.src.rpm
+build/
