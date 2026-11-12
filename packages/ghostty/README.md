@@ -28,6 +28,21 @@ same commit — the build refuses to proceed otherwise.
   `-Dcpu=baseline` keeps the binary portable across the arch's CPUs,
   `-Dpie=true` produces a hardened PIE, `-Demit-docs` generates the man pages
   from upstream's docs (hence `pandoc-cli`).
+- `mesa-libEGL-devel` is required: Zig links `-legl` for the OpenGL context and
+  fails at the final link without the `libEGL.so` development symlink. This is
+  invisible to `dnf builddep` reasoning, it only shows up as
+  `unable to find dynamic system library "egl"`.
+- Ghostty 1.4.0 installs a C library as well as the app: `libghostty-vt.so.0`,
+  headers under `/usr/include/ghostty`, a static archive and two pkg-config
+  files. Those belong in the `ghostty-libs` and `ghostty-devel` subpackages; the
+  `ghostty` binary does **not** link against the shared object.
+- Zig links ELF shared libraries without a GNU build-id, and `find-debuginfo`
+  aborts on that ("No build ID note found"), so the spec sets
+  `%global debug_package %{nil}` rather than ship a library rpm cannot
+  fingerprint. Drop that line if upstream starts emitting build-ids.
+- Build it alone. Two concurrent Zig builds on a 6-core/14 GB machine get the
+  glslang translation unit OOM-killed (`clang terminated with signal KILL`).
+
 - Ghostty's Zig dependencies (libxev, vaxis, zigimg, the Wayland and GTK
   bindings, JetBrains Mono and the Nerd Fonts symbols, the theme bundle) are the
   hash-pinned tarballs listed in `build.zig.zon` and are fetched from

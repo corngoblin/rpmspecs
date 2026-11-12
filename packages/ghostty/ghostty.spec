@@ -6,7 +6,7 @@ Summary:        Fast, feature-rich, and cross-platform terminal emulator that us
 
 License:        MIT
 URL:            https://ghostty.org
-Source0:        https://github.com/ghostty-org/ghostty/archive/refs/tags/v%{version}/%{name}-%{version}.tar.gz
+Source0:        https://release.files.ghostty.org/%{version}/%{name}-%{version}.tar.gz
 
 # Ghostty pins the exact Zig release it is developed against (minimum_zig_version
 # in build.zig.zon) and refuses to build with anything older. Fedora 44 and 45
@@ -21,42 +21,46 @@ Source2:        https://ziglang.org/download/%{zigver}/zig-aarch64-linux-%{zigve
 %endif
 
 
-ExclusiveArch: x86_64 aarch64
+ExclusiveArch:  x86_64 aarch64
 
-# Single definition of the build invocation, used for both compiling and for the
-# DESTDIR install pass in %%install.
-%global zig_build zig build --summary all --prefix "%{_prefix}" -Dversion-string=%{version}-%{release} -Doptimize=ReleaseFast -Dcpu=baseline -Dpie=true -Demit-docs
-
-
-BuildRequires: blueprint-compiler
-BuildRequires: fontconfig-devel
-BuildRequires: freetype-devel
-BuildRequires: glib2-devel
-BuildRequires: gtk4-devel
-BuildRequires: gtk4-layer-shell-devel
-BuildRequires: harfbuzz-devel
-BuildRequires: libadwaita-devel
-BuildRequires: libpng-devel
-BuildRequires: oniguruma-devel
-BuildRequires: pandoc-cli
-BuildRequires: pixman-devel
-BuildRequires: pkg-config
-BuildRequires: wayland-protocols-devel
-BuildRequires: zlib-ng-devel
-BuildRequires: desktop-file-utils
-BuildRequires: xz
+# Ghostty 1.4.0 installs libghostty-vt as a shared object, and Zig links ELF
+# shared libraries without a GNU build-id. find-debuginfo aborts on that
+# ("No build ID note found in libghostty-vt.so.0.1.0"), and no debuginfo package
+# is produced for this package as a result.
+%global debug_package %{nil}
 
 
-Requires: fontconfig
-Requires: freetype
-Requires: glib2
-Requires: gtk4
-Requires: harfbuzz
-Requires: libadwaita
-Requires: libpng
-Requires: oniguruma
-Requires: pixman
-Requires: zlib-ng
+BuildRequires:  blueprint-compiler
+BuildRequires:  fontconfig-devel
+BuildRequires:  freetype-devel
+BuildRequires:  glib2-devel
+BuildRequires:  gtk4-devel
+BuildRequires:  gtk4-layer-shell-devel
+BuildRequires:  harfbuzz-devel
+BuildRequires:  libadwaita-devel
+# Zig links -legl for the OpenGL context; the .so symlink comes from this package.
+BuildRequires:  mesa-libEGL-devel
+BuildRequires:  libpng-devel
+BuildRequires:  oniguruma-devel
+BuildRequires:  pandoc-cli
+BuildRequires:  pixman-devel
+BuildRequires:  pkg-config
+BuildRequires:  wayland-protocols-devel
+BuildRequires:  zlib-ng-devel
+BuildRequires:  desktop-file-utils
+BuildRequires:  xz
+
+
+Requires:       fontconfig
+Requires:       freetype
+Requires:       glib2
+Requires:       gtk4
+Requires:       harfbuzz
+Requires:       libadwaita
+Requires:       libpng
+Requires:       oniguruma
+Requires:       pixman
+Requires:       zlib-ng
 
 
 %description
@@ -66,6 +70,15 @@ Ghostty is a terminal emulator that differentiates itself by being fast,
 feature-rich, and native. While there are many excellent terminal emulators
 available, Ghostty aims to leverage native platform features and modern
 tooling to create a fast, feature-rich, and native terminal emulator.
+
+
+%package        devel
+Summary:        Development files for libghostty-vt
+Requires:       %{name}%{?_isa} = %{version}-%{release}
+
+%description    devel
+Headers, static library and pkg-config files for building against
+libghostty-vt, the VT parsing core that Ghostty ships as a C library.
 
 
 %prep
@@ -85,21 +98,53 @@ mv zig-aarch64-linux-%{zigver} zig-toolchain
 export PATH="%{_builddir}/%{name}-%{version}/zig-toolchain:$PATH"
 zig version
 
-# The Zig dependencies listed in build.zig.zon are the hash-verified tarballs
-# published by upstream on deps.files.ghostty.org; they are fetched during the
-# build, which is why the COPR project keeps network access enabled for builds.
-%zig_build
+# -fsys= links Fedora's fontconfig/freetype/harfbuzz instead of letting Zig
+# statically vendor its own copies. Without it the executable exports Fc*/FT_*/hb_*
+# symbols from the vendored code while GTK4 loads the system libraries, and the
+# executable wins global symbol resolution: GTK's calls land in the vendored
+# copies while operating on system-library state.
+#
+# One zig invocation, with DESTDIR set here: a second install pass leaves Zig's
+# staging cache behind for rpm's strip steps to trip over.
+DESTDIR=%{buildroot} zig build \
+    --summary all \
+    --prefix "%{_prefix}" \
+    -fsys=fontconfig \
+    -fsys=freetype \
+    -fsys=harfbuzz \
+    -Dversion-string=%{version}-%{release} \
+    -Doptimize=ReleaseFast \
+    -Dcpu=baseline \
+    -Dpie=true \
+    -Dstrip=false \
+    -Demit-docs
+
 
 %install
-export PATH="%{_builddir}/%{name}-%{version}/zig-toolchain:$PATH"
-DESTDIR=%{buildroot} %zig_build
+# Ghostty 1.4.0 records DESTDIR in the pkg-config prefix.
+sed -i 's|^prefix=.*|prefix=%{_prefix}|' \
+    "%{buildroot}%{_prefix}/share/pkgconfig/libghostty-vt.pc" \
+    "%{buildroot}%{_prefix}/share/pkgconfig/libghostty-vt-static.pc"
 
 # Fedora provides the terminfo entry for xterm-ghostty in ncurses-base from
 # Fedora 42 onwards; do not ship a second copy of the same name.
 rm -f "%{buildroot}%{_prefix}/share/terminfo/g/ghostty"
 
+
+%check
 desktop-file-validate \
     "%{buildroot}%{_prefix}/share/applications/com.mitchellh.ghostty.desktop"
+
+for module in libghostty-vt libghostty-vt-static; do
+    pc="%{buildroot}%{_prefix}/share/pkgconfig/${module}.pc"
+    grep -qxF 'prefix=%{_prefix}' "$pc"
+    if grep -nF '%{buildroot}' "$pc"; then
+        echo "ERROR: ${module}.pc contains the RPM build root" >&2
+        exit 1
+    fi
+    PKG_CONFIG_LIBDIR="%{buildroot}%{_prefix}/share/pkgconfig" pkg-config --validate "$module"
+done
+
 
 %files
 %license LICENSE
@@ -136,14 +181,28 @@ desktop-file-validate \
 %{_prefix}/share/locale/*/LC_MESSAGES/com.mitchellh.ghostty.mo
 %{_prefix}/share/metainfo/com.mitchellh.ghostty.metainfo.xml
 %{_prefix}/share/systemd/user/app-com.mitchellh.ghostty.service
+%{_prefix}/lib/libghostty-vt.so.0
+%{_prefix}/lib/libghostty-vt.so.0.1.0
+
 %{_prefix}/share/terminfo/x/xterm-ghostty
+
+%files devel
+%license LICENSE
+%{_prefix}/include/ghostty/vt.h
+%{_prefix}/include/ghostty/vt/
+%{_prefix}/lib/libghostty-vt.so
+%{_prefix}/lib/libghostty-vt.a
+%{_prefix}/share/pkgconfig/libghostty-vt.pc
+%{_prefix}/share/pkgconfig/libghostty-vt-static.pc
 
 %changelog
 * Thu Nov 12 2026 Ferah <ferah@localhost> - 1.4.0-1
 - Update to 1.4.0
 - Build with the upstream-pinned Zig 0.17.0 toolchain (Fedora ships Zig 0.16)
-- Keep the Zig package cache outside the source tree
-- Validate the desktop entry during the build
+- Use the official release tarball from release.files.ghostty.org
+- Link the system fontconfig/freetype/harfbuzz (-fsys=) instead of vendoring them
+- Package the new libghostty-vt library and its development files
+- Rewrite and validate the pkg-config prefix that upstream fills with DESTDIR
 
 * Thu Oct 23 2025 Ferah <ferah@localhost> - 1.2.2-1
 - Update to 1.2.2
