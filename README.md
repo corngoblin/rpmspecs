@@ -20,7 +20,6 @@ packages/<name>/        one directory per source package
     *.patch             patches applied by the spec, if any
     *.desktop, *.png    packaging assets upstream does not ship
     README.md           what the package is, where it comes from, how it is built
-archive/                retired packaging, kept for reference only (not built)
 scripts/rpm-build.sh    build and install-test one package in a clean container
 PACKAGING.md            conventions every spec here follows
 LICENSING.md            licensing notes, including what we cannot ship
@@ -41,10 +40,10 @@ LICENSING.md            licensing notes, including what we cannot ship
 | `packages/sunshine` | sunshine | [LizardByte/Sunshine](https://github.com/LizardByte/Sunshine) | 2025.628.4510 | not published |
 | `packages/ymir` | ymir | [StrikerX3/Ymir](https://github.com/StrikerX3/Ymir) | 0.1.7 | not published |
 
-`archive/` holds `gzdoom` only — superseded by `uzdoom`, patches kept for
-reference. The DuckStation and ghostty-nightly specs were removed rather than
-archived: the first is a licence issue (see `LICENSING.md`), the second resolved
-its commit with a `curl` at spec-parse time.
+Retired specs are removed outright, not archived: gzdoom (superseded by uzdoom;
+its patches remain reachable in git history), the old ghostty-nightly spec (it
+resolved its commit with a `curl` at spec-parse time), and DuckStation, which
+upstream's licence forbids packaging at all — see `LICENSING.md`.
 
 ## Building
 
