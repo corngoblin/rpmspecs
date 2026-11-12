@@ -1,6 +1,6 @@
 Name:           ghostty
 Version:        1.4.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Fast, feature-rich, and cross-platform terminal emulator that uses platform-native UI and GPU acceleration
 
 
@@ -193,14 +193,18 @@ done
 
 %files devel
 %license LICENSE
-%{_prefix}/include/ghostty/vt.h
-%{_prefix}/include/ghostty/vt/
+# Own the directory itself, not just the files in it: listing the headers
+# individually leaves an empty /usr/include/ghostty behind after rpm -e.
+%{_prefix}/include/ghostty
 %{_prefix}/lib/libghostty-vt.so
 %{_prefix}/lib/libghostty-vt.a
 %{_prefix}/share/pkgconfig/libghostty-vt.pc
 %{_prefix}/share/pkgconfig/libghostty-vt-static.pc
 
 %changelog
+* Thu Nov 12 2026 Ferah <ferah@localhost> - 1.4.0-2
+- Own /usr/include/ghostty as a directory so erasing -devel leaves nothing behind
+
 * Thu Nov 12 2026 Ferah <ferah@localhost> - 1.4.0-1
 - Update to 1.4.0
 - Build with the upstream-pinned Zig 0.17.0 toolchain (Fedora ships Zig 0.16)
