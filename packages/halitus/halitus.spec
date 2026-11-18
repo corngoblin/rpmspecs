@@ -2,7 +2,7 @@
 
 Name:           halitus
 Version:        0.1.0
-Release:        0.6.beta1
+Release:        0.7.beta1
 Summary:        Map the 2026 Steam Controller to a gamepad, mouse and keyboard
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/halitus
@@ -63,15 +63,19 @@ install -Dpm0644 packaging/rpm/dev-rules/99-halitus-dev.rules %{buildroot}%{_ude
 desktop-file-validate %{buildroot}%{_datadir}/applications/org.corngoblin.Halitus.desktop
 appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/org.corngoblin.Halitus.metainfo.xml
 
+# Cache refreshes must never abort an install. In a container, a chroot, or any system where udev is not running,
+# the helper exits non-zero and rpm rolls the whole transaction back - so a user cannot install Halitus at all in
+# those environments. Each one is best-effort by definition: the next boot or the next cache rebuild fixes a miss,
+# whereas a failed transaction cannot be recovered from.
 %post
-%udev_rules_update
-%desktop_database_post
-%icon_theme_cache_post
+%udev_rules_update || :
+%desktop_database_post || :
+%icon_theme_cache_post || :
 
 %postun
-%udev_rules_update
-%desktop_database_postun
-%icon_theme_cache_postun
+%udev_rules_update || :
+%desktop_database_postun || :
+%icon_theme_cache_postun || :
 
 %files
 %license LICENSE
