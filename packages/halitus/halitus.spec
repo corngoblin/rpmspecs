@@ -2,7 +2,7 @@
 
 Name:           halitus
 Version:        0.1.0
-Release:        0.5.beta1
+Release:        0.6.beta1
 Summary:        Map the 2026 Steam Controller to a gamepad, mouse and keyboard
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/halitus
@@ -42,6 +42,9 @@ udev rules that let a normal user read the controller.
 # needs the registry. COPR has network enabled for this project, and --locked pins every crate to the version in
 # Cargo.lock, so a build cannot drift silently. Vendoring for a fully offline build is the next step for a stable
 # release; it trades source size for not depending on crates.io being reachable.
+# Beta builds log at debug by default; the flag is compile-time (option_env!), so it has to be set here rather than
+# in a unit file. Remove this line when cutting a finished release.
+export HALITUS_BETA=1
 cargo build --release --workspace --locked
 
 %install
