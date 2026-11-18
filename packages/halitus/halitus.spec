@@ -2,7 +2,7 @@
 
 Name:           halitus
 Version:        0.1.0
-Release:        0.7.beta1
+Release:        0.8.beta3
 Summary:        Map the 2026 Steam Controller to a gamepad, mouse and keyboard
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/halitus
