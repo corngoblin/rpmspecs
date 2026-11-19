@@ -2,7 +2,7 @@
 
 Name:           lykos
 Version:        0.2.0
-Release:        0.4.beta1%{?dist}
+Release:        0.5.beta1%{?dist}
 Summary:        Fast native music player for GNOME on the Amarok 1.4 layout
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/lykos_beta
@@ -108,6 +108,11 @@ fi
 %{_datadir}/icons/hicolor/128x128/apps/io.github.corngoblin.Lykos.png
 
 %changelog
+* Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.2.0-0.5.beta1
+- Fix the config migration cutoff: v1 stored 0.34, which sat above the 0.30
+  threshold, so the very configs that showed the blinding tint would not have
+  been migrated. Covered by a unit test now.
+
 * Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.2.0-0.4.beta1
 - Sidebar glass: the film follows the theme instead of the text colour, so a
   dark theme gets smoked glass instead of a bright wash; blur radius 90.
