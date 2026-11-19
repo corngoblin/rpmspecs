@@ -1,14 +1,14 @@
 %global debug_package %{nil}
 
 Name:           lykos
-Version:        0.2.0
-Release:        0.5.beta1%{?dist}
+Version:        0.3.0
+Release:        0.6.beta1%{?dist}
 Summary:        Fast native music player for GNOME on the Amarok 1.4 layout
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/lykos_beta
 
 # The upstream repository is private while the beta is in progress, so COPR
-# cannot fetch it: the SRPM carries a `git archive --prefix=lykos-0.2.0/`
+# cannot fetch it: the SRPM carries a `git archive --prefix=lykos-0.3.0/`
 # tarball instead. When the repository opens, Source0 becomes the archive URL
 # for the release tag and nothing else in this spec changes.
 Source0:        %{name}-%{version}.tar.gz
@@ -108,6 +108,14 @@ fi
 %{_datadir}/icons/hicolor/128x128/apps/io.github.corngoblin.Lykos.png
 
 %changelog
+* Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.3.0-0.6.beta1
+- Real compositor blur via CSS backdrop-filter (GTK 4.21.2) and
+  ext-background-effect-v1 (GTK 4.23.3); the hand-rolled blur painting is gone.
+- The blur sits on a dedicated layer behind the content, so text is never part
+  of the filtered group.
+- Blur amount and tint brightness sliders, alongside the existing tint.
+- Album art on collection rows with a live size slider, decoded on a worker.
+
 * Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.2.0-0.5.beta1
 - Fix the config migration cutoff: v1 stored 0.34, which sat above the 0.30
   threshold, so the very configs that showed the blinding tint would not have
