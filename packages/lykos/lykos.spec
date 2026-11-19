@@ -2,7 +2,7 @@
 
 Name:           lykos
 Version:        0.1.0
-Release:        0.2.beta1%{?dist}
+Release:        0.3.beta1%{?dist}
 Summary:        Fast native music player for GNOME on the Amarok 1.4 layout
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/lykos_beta
@@ -75,13 +75,26 @@ install -Dpm0644 data/io.github.corngoblin.Lykos-128.png \
 desktop-file-validate %{buildroot}%{_datadir}/applications/io.github.corngoblin.Lykos.desktop
 appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/io.github.corngoblin.Lykos.metainfo.xml
 
+# Fedora 45 no longer defines the desktop-file-utils scriptlet macros
+# (%desktop_database_post and friends), so they would ship as literal text and
+# bash would try to run them as job specs: "fg: no job control" on every erase.
+# The commands are written out and guarded instead; both are optional runtime
+# tools, not requirements.
 %post
-%desktop_database_post || :
-%icon_theme_cache_post || :
+if [ -x %{_bindir}/gtk-update-icon-cache ]; then
+    %{_bindir}/gtk-update-icon-cache -q -t -f %{_datadir}/icons/hicolor >/dev/null 2>&1 || :
+fi
+if [ -x %{_bindir}/update-desktop-database ]; then
+    %{_bindir}/update-desktop-database -q %{_datadir}/applications >/dev/null 2>&1 || :
+fi
 
 %postun
-%desktop_database_postun || :
-%icon_theme_cache_postun || :
+if [ -x %{_bindir}/gtk-update-icon-cache ]; then
+    %{_bindir}/gtk-update-icon-cache -q -t -f %{_datadir}/icons/hicolor >/dev/null 2>&1 || :
+fi
+if [ -x %{_bindir}/update-desktop-database ]; then
+    %{_bindir}/update-desktop-database -q %{_datadir}/applications >/dev/null 2>&1 || :
+fi
 
 %files
 %license LICENSE
@@ -95,6 +108,11 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/io.github.corn
 %{_datadir}/icons/hicolor/128x128/apps/io.github.corngoblin.Lykos.png
 
 %changelog
+* Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.1.0-0.3.beta1
+- Replace the desktop-file-utils scriptlet macros with explicit guarded
+  commands: Fedora 45 does not define them, so erase printed
+  "fg: no job control" from the unexpanded text.
+
 * Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.1.0-0.2.beta1
 - Files browser fills when the page opens; one navigation path for the rail
   and the View menu.
