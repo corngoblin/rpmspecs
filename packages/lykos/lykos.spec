@@ -2,7 +2,7 @@
 
 Name:           lykos
 Version:        0.1.0
-Release:        0.1.beta1%{?dist}
+Release:        0.2.beta1%{?dist}
 Summary:        Fast native music player for GNOME on the Amarok 1.4 layout
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/lykos_beta
@@ -95,6 +95,12 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/io.github.corn
 %{_datadir}/icons/hicolor/128x128/apps/io.github.corngoblin.Lykos.png
 
 %changelog
+* Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.1.0-0.2.beta1
+- Files browser fills when the page opens; one navigation path for the rail
+  and the View menu.
+- `lykos PATH` queues the tracks under a file or folder, like `exaile LOCATION`.
+- Measured performance documented against Exaile 4.2.2.
+
 * Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.1.0-0.1.beta1
 - First beta: SQLite library, Amarok 1.4 interface, GStreamer playback with
   gapless handoff, MPRIS2, native Wayland blur with an opaque fallback,
