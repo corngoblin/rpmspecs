@@ -1,14 +1,14 @@
 %global debug_package %{nil}
 
 Name:           lykos
-Version:        0.1.0
-Release:        0.3.beta1%{?dist}
+Version:        0.2.0
+Release:        0.4.beta1%{?dist}
 Summary:        Fast native music player for GNOME on the Amarok 1.4 layout
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/lykos_beta
 
 # The upstream repository is private while the beta is in progress, so COPR
-# cannot fetch it: the SRPM carries a `git archive --prefix=lykos-0.1.0/`
+# cannot fetch it: the SRPM carries a `git archive --prefix=lykos-0.2.0/`
 # tarball instead. When the repository opens, Source0 becomes the archive URL
 # for the release tag and nothing else in this spec changes.
 Source0:        %{name}-%{version}.tar.gz
@@ -108,6 +108,18 @@ fi
 %{_datadir}/icons/hicolor/128x128/apps/io.github.corngoblin.Lykos.png
 
 %changelog
+* Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.2.0-0.4.beta1
+- Sidebar glass: the film follows the theme instead of the text colour, so a
+  dark theme gets smoked glass instead of a bright wash; blur radius 90.
+- The header bar stays opaque inside a transparent window.
+- Optional blur for the player bar and the status bar, plus a corner cover
+  thumbnail, all with switches in Appearance.
+- Playing from the collection now repopulates the playlist table immediately.
+- Clear-playlist button with confirmation; clearing resets now-playing and
+  persists, so an abrupt quit no longer brings the queue back.
+- Library scans show a determinate progress bar with a percentage.
+- Preferences pages are titled (the switcher rendered blank icons before).
+
 * Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.1.0-0.3.beta1
 - Replace the desktop-file-utils scriptlet macros with explicit guarded
   commands: Fedora 45 does not define them, so erase printed
