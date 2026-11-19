@@ -1,14 +1,14 @@
 %global debug_package %{nil}
 
 Name:           lykos
-Version:        0.3.0
-Release:        0.6.beta1%{?dist}
+Version:        0.4.0
+Release:        0.7.beta1%{?dist}
 Summary:        Fast native music player for GNOME on the Amarok 1.4 layout
 License:        GPL-3.0-or-later
 URL:            https://github.com/corngoblin/lykos_beta
 
 # The upstream repository is private while the beta is in progress, so COPR
-# cannot fetch it: the SRPM carries a `git archive --prefix=lykos-0.3.0/`
+# cannot fetch it: the SRPM carries a `git archive --prefix=lykos-0.4.0/`
 # tarball instead. When the repository opens, Source0 becomes the archive URL
 # for the release tag and nothing else in this spec changes.
 Source0:        %{name}-%{version}.tar.gz
@@ -108,6 +108,11 @@ fi
 %{_datadir}/icons/hicolor/128x128/apps/io.github.corngoblin.Lykos.png
 
 %changelog
+* Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.4.0-0.7.beta1
+- Optional three-column browser (artists / albums / tracks) in the style of
+  Daphne: chained selection, multi-select with an "N selected" chip, per-column
+  search and sortable headings. Default stays the tree.
+
 * Thu Nov 19 2026 corngoblin <corngoblin@users.noreply.github.com> - 0.3.0-0.6.beta1
 - Real compositor blur via CSS backdrop-filter (GTK 4.21.2) and
   ext-background-effect-v1 (GTK 4.23.3); the hand-rolled blur painting is gone.
