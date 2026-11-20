@@ -5,7 +5,7 @@
 %global app_id io.github.corngoblin.TzTracker
 
 Name:           tztracker
-Version:        1.5.4
+Version:        1.5.5
 Release:        1%{?dist}
 Summary:        Terror Zone, Diablo Clone and magic-find tracker for Diablo II: Resurrected
 
@@ -110,6 +110,16 @@ fi
 %{_datadir}/icons/hicolor/512x512/apps/%{app_id}.png
 
 %changelog
+* Fri Nov 20 2026 corngoblin <corngoblin@users.noreply.github.com> - 1.5.5-1
+- The next zone now appears on its own at any poll interval. The tracker
+  announces the following rotation a few minutes before it starts; the app used
+  to ask only at the rotation boundary, i.e. just before that, and with a long
+  interval it repeated that every rotation, leaving the next card empty until a
+  restart. Requests now follow the forecast on a 20-120 s ladder while it is
+  missing.
+- The next card says the announcement is pending instead of reading like a
+  failure, and the header clock follows the seconds again.
+- A feed silent for fifteen minutes is now reported in the log.
 * Fri Nov 20 2026 corngoblin <corngoblin@users.noreply.github.com> - 1.5.4-1
 - First RPM: the tracker page, the in-game overlay, Diablo Clone progress,
   runewords, recipes, the magic-find counter, the drop calculator, the grail
