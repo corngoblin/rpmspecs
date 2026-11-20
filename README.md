@@ -37,6 +37,7 @@ LICENSING.md            licensing notes, including what we cannot ship
 | `packages/topgrade` | topgrade | [topgrade-rs/topgrade](https://github.com/topgrade-rs/topgrade) | 16.0.4 | `topgrade` |
 | `packages/twad` | twad | [twad-rs/twad](https://github.com/twad-rs/twad) | 0.30.0 | `twad` — never built, see below |
 | `packages/woeusb-ng` | woeusb-ng | [WoeUSB/WoeUSB-ng](https://github.com/WoeUSB/WoeUSB-ng) | 0.2.10 | `woeusb-ng` — never built, see below |
+| `packages/tztracker` | tztracker | [corngoblin/TzTracker](https://github.com/corngoblin/TzTracker) (private) | 1.5.4 | `tztracker` — uploaded SRPM, see its README |
 | `packages/sunshine` | sunshine | [LizardByte/Sunshine](https://github.com/LizardByte/Sunshine) | 2025.628.4510 | not published |
 | `packages/ymir` | ymir | [StrikerX3/Ymir](https://github.com/StrikerX3/Ymir) | 0.1.7 | not published |
 
